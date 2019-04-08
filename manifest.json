@@ -1,0 +1,38 @@
+{
+    "manifest_version": 2,
+    "name": "Stream Bulletin",
+    "version": "0.1",
+
+    "description": "Displays live broadcasts from followed sources",
+    "icons":{
+	"48": "icons/nnf-48.png"
+    },
+
+    "background": {
+	"scripts":["browser-polyfill.js",
+		   "background_script.js",
+		   "moment.js",
+		   "moment-timezone-with-data.js"]
+    },
+
+    "browser_action": {
+	"default_icon": "icon.svg",
+	"default_title": "Stream Bulletin",
+	"default_popup": "popup/lives.html"
+    },
+    
+    "permissions": [
+	"cookies",
+	"tabs",
+	"storage",
+	"https://*.nicovideo.jp/*",
+	"https://*.cdn.nimg.jp/*",
+	"https://*.whowatch.tv/*",
+	"https://*.openrec.tv/*",
+	"https://*.twitcasting.tv/*"
+    ],
+    
+    "web_accessible_resources": [
+	"background_script.js"
+	]
+}
