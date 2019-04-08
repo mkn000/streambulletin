@@ -8,7 +8,7 @@ var baseUrls = {niconama:"https://live.nicovideo.jp/watch/lv",
 
 document.addEventListener("DOMContentLoaded",async function(){
     let head = `Stream Bulletin v.${browser.runtime.getManifest().version}`;
-    document.getElementsByTagName("header")[0].innerHTML = head;
+    document.getElementsByTagName("header")[0].textContent = head;
     let page = await browser.runtime.getBackgroundPage();
     index = page.index;
     let getOption = await browser.storage.local.get();
@@ -60,7 +60,7 @@ function getLives(show){
     lives.sort(function(a,b){return b.startTime.diff(a.startTime)});
     if (lives.length == 0){
 	let nope = document.createElement("p");
-	nope.innerHTML = "現在、配信はありません";
+	nope.textContent = "現在、配信はありません";
 	document.body.appendChild(nope);
     } else {
 	lives.forEach(crElements);
@@ -75,7 +75,8 @@ function crElements(ar){
     document.body.appendChild(info);
     
     var heading = document.createElement("div");
-    heading.innerHTML = ar.startTime.local().format("M[月]D[日]　HH:mm[開始]");
+    heading.textContent =
+	ar.startTime.local().format("M[月]D[日]　HH:mm[開始]");
     heading.className = "time";
     info.appendChild(heading);
     
@@ -87,7 +88,7 @@ function crElements(ar){
     info.appendChild(image);
 
     var content = document.createElement("div");
-    content.innerHTML = ar.title;
+    content.textContent = ar.title;
     content.className = "title";
     info.appendChild(content);
     
