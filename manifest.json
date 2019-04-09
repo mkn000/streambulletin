@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Stream Bulletin",
-    "version": "0.1",
+    "version": "0.1.1",
 
     "description": "Displays live broadcasts from followed sources",
     "icons":{
@@ -34,5 +34,5 @@
     
     "web_accessible_resources": [
 	"background_script.js"
-	]
+    ]
 }
