@@ -3,7 +3,7 @@
 }
 
 body{
-    width: 495px;
+    width: 485px;
     height: 300px;
     overflow: hidden auto;
 }
@@ -45,13 +45,13 @@ div.live {
     height: 90px;
     width: var(--content-width);
     padding: 0px 0px 0px 0px;
-    margin: 0px 1px;
+    margin: 1px 1px;
 }
 
 
 .time {
     word-spacing: 5px;
-    margin: 3px 2px;
+    margin: 5px 2px;
     height: 15px;
     width: var(--content-width);
     clear: both;
