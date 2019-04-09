@@ -4,7 +4,7 @@ var index = {nico:{lives:[]},
 	     twc:{lives:[]}
 	    }
 var oh = ["Uuid","Token","Random"];//openrec login
-var oc = ["lang","device","init_dt"];//twitcasting header
+var oc = ["lang","device","init_dt"];//openrec header
 var tc = ["hl","did","tc_id","tc_ss"];//twitcasting login
 var option = {show: "all"};
 browser.storage.local.set(option);
@@ -22,8 +22,15 @@ async function loginCheck(site){
     switch(site) {
     //niconama	
     case "nico":
-	let cn = browser.cookies.get({name: "user_session",
-				      url: "https://live.nicovideo.jp"});
+	let cn;
+	if (typeof InstallTrigger !== 'undefined'){
+	    cn = browser.cookies.get({name: "user_session",
+				      url: "https://live.nicovideo.jp",
+				      firstPartyDomain: null});
+	} else {
+	    cn = browser.cookies.get({name: "user_session",
+				      url: "https://live.nicovideo.jp"})
+	}
 	cn.then(cookie => {
 	    if (cookie) {
 		index.nico.login = true;
@@ -44,12 +51,27 @@ async function loginCheck(site){
 	break;
     //openrec
     case "orec":
-	let co = browser.cookies.getAll({url:"https://www.openrec.tv"})
-	co.then(function(cookies){
+	let co;
+	if (typeof InstallTrigger !== 'undefined'){
+	    co = browser.cookies.getAll({url:"https://www.openrec.tv",
+					 firstPartyDomain:null})
+	} else {
+	    arr = [];
+	    for (let item of [...oh.map(x => x.toLowerCase()),...oc]) {
+		let co2 = browser.cookies.get({name:item,
+					   url:"https://www.openrec.tv"});
+		co2.then(cookie => arr.push(cookie))
+	    }
+
+	    co = new Promise((resolve) =>
+			     setTimeout(function(){resolve(arr)},10))
+		       
+	}
+	co.then(cookies => {
 	    if (cookies){
 		let cookie = "";
 		let params = new URLSearchParams();
-		cookies.forEach(function(val){
+		for (let val of cookies) {
 		    if (oc.find(function(h){return val.name==h;})){
 			cookie = cookie+`${val.name}=${val.value}; `
 		    }
@@ -63,7 +85,7 @@ async function loginCheck(site){
 		    if (ix >= 0){
 			params.set(oh[ix],val.value);
 		    }
-		})
+		}
 		Object.assign(index.orec,{cookie:cookie.slice(0,-2),
 					  login: params.toString()});
 	    }
@@ -81,7 +103,6 @@ async function loginCheck(site){
 		    domain: ".twitcasting.tv",
 		    firstPartyDomain: null})
 	    } else {
-		console.log("vittu");
 		co3 = await browser.cookies.get({
 		    name:item,
 		    url: "https://*.twitcasting.tv"})
@@ -94,12 +115,12 @@ async function loginCheck(site){
     }
 }
 
-//fetch live information every 10 seconds
+//fetch live information every 15 seconds
 function mainRoutine(){
     setTimeout(function(){
 	updateFun();
 	mainRoutine();
-    },10*1000)
+    },15*1000)
 }
 
 function updateFun() {
@@ -133,7 +154,7 @@ function updateFun() {
 		++page;
 		p = new Promise((resolve) => {
 		fetch('https://www.openrec.tv/viewapp/api/v3/timeline/more?'+
-		      index.orec.login+`page_number=${page}`,
+		      index.orec.login+`&page_number=${page}&term=1`,
 		      {headers:{'Cookie':index.orec.cookie}}
 		     )
 			.then(resp => resp.json())
