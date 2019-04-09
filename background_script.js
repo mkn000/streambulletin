@@ -26,7 +26,8 @@ async function loginCheck(site){
 	if (typeof InstallTrigger !== 'undefined'){
 	    cn = browser.cookies.get({name: "user_session",
 				      url: "https://live.nicovideo.jp",
-				      firstPartyDomain: null});
+				      firstPartyDomain: "nicovideo.jp"
+				     });
 	} else {
 	    cn = browser.cookies.get({name: "user_session",
 				      url: "https://live.nicovideo.jp"})
@@ -38,6 +39,7 @@ async function loginCheck(site){
 		index.nico.login  = false;
 	    }
 	})
+	cn.catch(err => console.log(err))
 	break;
     //whowatch	
     case "whow":

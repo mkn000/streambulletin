@@ -71,7 +71,7 @@ span:hover {
     overflow: hidden;
 }
 
-div.reloadButton {
+p.reloadButton {
     border: 2px solid black;
     box-shadow: 10px;
     background-color: #c3d0f4;
@@ -80,6 +80,6 @@ div.reloadButton {
     height: 20px;
 }
 
-div.reloadButton:hover{
+p.reloadButton:hover{
     cursor: pointer;
 }

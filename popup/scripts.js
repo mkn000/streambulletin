@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded",async function(){
 	let pls = document.createElement("p");
 	pls.innerHTML = "ログインして、下の「リロード」ボタンを押してください";
 	document.body.appendChild(pls);
-	let but = document.createElement("div");
+	let but = document.createElement("p");
 	but.innerHTML = "リロード";
 	but.className = "reloadButton";
 	but.addEventListener("click",function(){
