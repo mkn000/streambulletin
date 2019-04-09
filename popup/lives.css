@@ -1,7 +1,13 @@
-html,body{
-    width: 500px;
-    height: 300px;
+:root {
+    --content-width: 480px;
 }
+
+body{
+    width: 495px;
+    height: 300px;
+    overflow: hidden auto;
+}
+ 
 
 header {
     font-family: Tahoma, Geneva, sans-serif;
@@ -11,7 +17,7 @@ header {
     display: flex;
     border: 2px solid blue;
     flex-direction: row;
-    width: 490px;
+    width: var(--content-width);
     height: 30px;
 }
 
@@ -33,13 +39,13 @@ span:hover {
 }
 			 
 
-.live {
+div.live {
     outline: 2px solid black;
     align-content: space-between;
     height: 90px;
-    width: 490px;
+    width: var(--content-width);
     padding: 0px 0px 0px 0px;
-    margin: 3px 1px;
+    margin: 0px 1px;
 }
 
 
@@ -47,7 +53,7 @@ span:hover {
     word-spacing: 5px;
     margin: 3px 2px;
     height: 15px;
-    width: 480px;
+    width: var(--content-width);
     clear: both;
 }
 
@@ -65,8 +71,8 @@ span:hover {
 .title {
     float: left;
     height: 64px;
-    width: 400px;
-    margin: 3px 02px 2px 2px;
+    width: 300px;
+    margin: 3px 2px 2px 2px;
     font-weight: bold;
     overflow: hidden;
 }
