@@ -43,13 +43,15 @@ async function loginCheck(site){
 	break;
     //whowatch	
     case "whow":
-	fetch("https://api.whowatch.tv/users/me/profile")
+	fetch("https://api.whowatch.tv/users/me/profile",
+	      {credentials:"include"})
 	    .then(resp => resp.json())
 	    .then(data => {
 		if (data.name){
 		    index.whow.login = true;
 		}
 	    })
+	    .catch(err => console.log(err))
 	break;
     //openrec
     case "orec":
