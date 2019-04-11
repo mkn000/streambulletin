@@ -43,6 +43,14 @@ async function loginCheck(site){
 	break;
     //whowatch	
     case "whow":
+	let cw;
+	if (typeof InstallTrigger !== 'undefined'){
+	    cw = browser.cookies.getAll({url:"https://whowatch.tv",
+					 firstPartyDomain: "whowatch.tv"})
+	    cw.then(cookie => console.log(cookie))
+	}
+
+	
 	fetch("https://api.whowatch.tv/users/me/profile",
 	      {credentials:"include"})
 	    .then(resp => resp.json())
@@ -58,7 +66,7 @@ async function loginCheck(site){
 	let co;
 	if (typeof InstallTrigger !== 'undefined'){
 	    co = browser.cookies.getAll({url:"https://www.openrec.tv",
-					 firstPartyDomain:null})
+					 firstPartyDomain: "openrec.tv"})
 	} else {
 	    arr = [];
 	    for (let item of [...oh.map(x => x.toLowerCase()),...oc]) {
@@ -105,7 +113,7 @@ async function loginCheck(site){
 		co2 = await browser.cookies.getAll({
 		    name: item,
 		    domain: ".twitcasting.tv",
-		    firstPartyDomain: null})
+		    firstPartyDomain: "twitcasting.tv"})
 	    } else {
 		co3 = await browser.cookies.get({
 		    name:item,
