@@ -98,8 +98,11 @@ async function loginCheck(site){
 	}
 	break;
     case "yt":
-	let cy = await browser.storage.local.get();
-	index.yt.login = cy.ytauth;
+	let cy = browser.storage.local.get('ytauth');
+	cy.then(resp => {
+	    try { index.yt.login = resp.ytauth }
+	    catch(err){console.log(err)}
+		})
 	break;
     }
     
