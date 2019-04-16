@@ -3,8 +3,7 @@
 }
 
 body{
-    width: 485px;
-    height: 300px;
+    width: 500px;
     overflow: hidden auto;
 }
  
@@ -15,10 +14,10 @@ header {
 
 .menu{
     display: flex;
-    border: 2px solid blue;
     flex-direction: row;
+    /*border: 2px solid blue;
     width: var(--content-width);
-    height: 30px;
+    height: 30px;*/
 }
 
 span {
@@ -39,18 +38,22 @@ span:hover {
 }
 			 
 
-div.live {
-    outline: 2px solid black;
+.live {
+    outline: 3px solid black;
     align-content: space-between;
     height: 90px;
-    width: var(--content-width);
-    padding: 0px 0px 0px 0px;
-    margin: 1px 1px;
+    width: var(--content-width)-3px;
+    padding: 0px;
+    margin: 1px 0px;
 }
 
+.live:hover{
+    color: white;
+    background-color: blue;
+}
 
 .time {
-    word-spacing: 5px;
+    word-spacing: 3px;
     margin: 5px 2px;
     height: 15px;
     width: var(--content-width);
@@ -69,23 +72,20 @@ div.live {
 
 
 .title {
-    float: left;
     height: 64px;
-    width: 300px;
-    margin: 3px 2px 2px 2px;
+    width: var(--content-width)-70px;
+    margin: 3px 0px 2px 2px;
     font-weight: bold;
     overflow: hidden;
 }
 
-p.reloadButton {
+.reloadButton {
     border: 2px solid black;
     box-shadow: 10px;
     background-color: #c3d0f4;
     padding: 5px 10px;
-    width: 60px;
-    height: 20px;
 }
 
-p.reloadButton:hover{
+.reloadButton:hover{
     cursor: pointer;
 }

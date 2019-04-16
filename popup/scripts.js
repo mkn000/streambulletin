@@ -3,7 +3,8 @@ var index;
 var baseUrls = {niconama:"https://live.nicovideo.jp/watch/lv",
 		whowatch:"https://whowatch.tv/viewer/",
 		orec:"https://www.openrec.tv/live/",
-		twc:"https://twitcasting.tv/"
+		twc:"https://twitcasting.tv/",
+		yt:"https://www.youtube.com/watch?v="
 	       }
 
 document.addEventListener("DOMContentLoaded",async function(){
@@ -18,10 +19,10 @@ document.addEventListener("DOMContentLoaded",async function(){
 	getLives(show);
     } else {
 	let pls = document.createElement("p");
-	pls.innerHTML = "ログインして、下の「リロード」ボタンを押してください";
+	pls.innerText = "ログインして、下の「リロード」ボタンを押してください。";
 	document.body.appendChild(pls);
-	let but = document.createElement("p");
-	but.innerHTML = "リロード";
+	let but = document.createElement("button");
+	but.innerText = "リロード";
 	but.className = "reloadButton";
 	but.addEventListener("click",function(){
 	    page.loginCheck(show);
@@ -75,8 +76,12 @@ function crElements(ar){
     document.body.appendChild(info);
     
     var heading = document.createElement("div");
-    heading.textContent =
-	ar.startTime.local().format("M[月]D[日]　HH:mm[開始]");
+    if (ar.timeNote) {
+	heading.textContent = ar.timeNote;
+    } else {
+	heading.textContent =
+	    ar.startTime.local().format("M[月]D[日]　HH:mm[開始]");
+    }
     heading.className = "time";
     info.appendChild(heading);
     
@@ -88,17 +93,12 @@ function crElements(ar){
     info.appendChild(image);
 
     var content = document.createElement("div");
-    content.textContent = ar.title;
+    content.innerText = ar.title;
     content.className = "title";
     info.appendChild(content);
     
     document.getElementById(ar.id).addEventListener("click",function(){
 	browser.tabs.create({url:baseUrls[ar.serv]+ar.id});
     })
-    document.getElementById(ar.id).addEventListener("mouseover",function(){
-	document.getElementById(ar.id).style.backgroundColor = "cyan";
-    })
-    document.getElementById(ar.id).addEventListener("mouseout",function(){
-	document.getElementById(ar.id).style.backgroundColor = "white";
-    })
+
 }

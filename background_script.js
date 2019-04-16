@@ -1,16 +1,22 @@
 var index = {nico:{lives:[]},
 	     whow:{lives:[]},
 	     orec:{lives:[]},
-	     twc:{lives:[]}
+	     twc:{lives:[]},
+	     yt:{lives:[]}
 	    }
 var oh = ["Uuid","Token","Random"];//openrec login
 var oc = ["lang","device","init_dt"];//openrec header
 var tc = ["hl","did","tc_id","tc_ss"];//twitcasting login
 var option = {show: "all"};
+var startUpTime;
 browser.storage.local.set(option);
+
+window.addEventListener("online",function(){startUpTime = moment();
+					    console.log("works")});
 
 (function startup(){
     new Promise((resolve) => {
+	startUpTime = moment();
 	Object.entries(index).forEach(([key,value]) => loginCheck(key));
 	resolve();
     })
@@ -22,37 +28,14 @@ async function loginCheck(site){
     switch(site) {
     //niconama	
     case "nico":
-	let cn;
-	if (typeof InstallTrigger !== 'undefined'){
-	    cn = browser.cookies.get({name: "user_session",
-				      url: "https://live.nicovideo.jp",
-				      firstPartyDomain: "nicovideo.jp"
-				     });
-	} else {
-	    cn = browser.cookies.get({name: "user_session",
-				      url: "https://live.nicovideo.jp"})
-	}
-	cn.then(cookie => {
-	    if (cookie) {
-		index.nico.login = true;
-	    } else {
-		index.nico.login  = false;
-	    }
-	})
+	let cn = browser.cookies.get({name: "user_session",
+				      url: "https://www.nicovideo.jp"})
+	cn.then(cookie => {(cookie) ? index.nico.login = true : {}})
 	cn.catch(err => console.log(err))
 	break;
     //whowatch	
     case "whow":
-	let cw;
-	if (typeof InstallTrigger !== 'undefined'){
-	    cw = browser.cookies.getAll({url:"https://whowatch.tv",
-					 firstPartyDomain: "whowatch.tv"})
-	    cw.then(cookie => console.log(cookie))
-	}
-
-	
-	fetch("https://api.whowatch.tv/users/me/profile",
-	      {credentials:"include"})
+	fetch("https://api.whowatch.tv/users/me/profile")
 	    .then(resp => resp.json())
 	    .then(data => {
 		if (data.name){
@@ -63,22 +46,15 @@ async function loginCheck(site){
 	break;
     //openrec
     case "orec":
-	let co;
-	if (typeof InstallTrigger !== 'undefined'){
-	    co = browser.cookies.getAll({url:"https://www.openrec.tv",
-					 firstPartyDomain: "openrec.tv"})
-	} else {
-	    arr = [];
-	    for (let item of [...oh.map(x => x.toLowerCase()),...oc]) {
-		let co2 = browser.cookies.get({name:item,
+	arr = [];
+	for (let item of [...oh.map(x => x.toLowerCase()),...oc]) {
+	    let co2 = browser.cookies.get({name:item,
 					   url:"https://www.openrec.tv"});
-		co2.then(cookie => arr.push(cookie))
-	    }
-
-	    co = new Promise((resolve) =>
-			     setTimeout(function(){resolve(arr)},10))
-		       
+	    co2.then(cookie => arr.push(cookie))
 	}
+	
+	let co = new Promise((resolve) =>
+			     setTimeout(function(){resolve(arr)},100));
 	co.then(cookies => {
 	    if (cookies){
 		let cookie = "";
@@ -106,25 +82,27 @@ async function loginCheck(site){
     //twitcasting
     case "twc":
 	cookie2 = "";
-	let co2 = [];
+	let broken;
 	for (let item of tc){
-	    //if browser is firefox
-	    if (typeof InstallTrigger !== 'undefined'){
-		co2 = await browser.cookies.getAll({
-		    name: item,
-		    domain: ".twitcasting.tv",
-		    firstPartyDomain: "twitcasting.tv"})
+	    let ctc = await browser.cookies.get({name: item,
+						 url: "https://twitcasting.tv"})
+	    if (ctc) {
+		cookie2 = cookie2+`${ctc.name}=${ctc.value}; `;
 	    } else {
-		co3 = await browser.cookies.get({
-		    name:item,
-		    url: "https://*.twitcasting.tv"})
-		co2[0] = co3;
-	    } 
-	    cookie2 = cookie2+`${co2[0].name}=${co2[0].value}; `;
+		broken = true;
+		break;
+	    }
 	}
-	Object.assign(index.twc,{login:cookie2.slice(0,-2)});
+	if (!broken) {
+	    Object.assign(index.twc,{login:cookie2.slice(0,-2)});
+	}
+	break;
+    case "yt":
+	let cy = await browser.storage.local.get();
+	index.yt.login = cy.ytauth;
 	break;
     }
+    
 }
 
 //fetch live information every 15 seconds
@@ -203,6 +181,15 @@ function updateFun() {
 		 })
 		 .catch(err => console.log(err))
 	 }
+
+	//youtube
+	if (index.yt.login) {
+	    fetch('https://www.youtube.com/feed/subscriptions?flow=2&pbj=1',
+		  {headers:index.yt.login})
+		.then(resp => resp.json())
+		.then(data => ytCheck(data))
+	}
+	
 	 //toolbar icon
 	let total = 0;
 	Object.entries(index).forEach(([key,value]) =>
@@ -390,4 +377,52 @@ function twcParse(path){
 	})
 	.then(()=>{index.twc.lives.unshift(info);return true})
 	.catch(p => console.log(p))
+}
+
+function ytCheck(arr){
+    let feed = arr[1].response.contents.twoColumnBrowseResultsRenderer.
+	tabs[0].tabRenderer.content.sectionListRenderer.contents;
+    for (i=0;i < feed.length-1;i++){
+	let yEntryTop = feed[i].itemSectionRenderer.contents[0].shelfRenderer;
+	if (yEntryTop.title.simpleText == 'Live'){
+	    let yEntry = yEntryTop.content.expandedShelfContentsRenderer.
+		items[0].videoRenderer;
+	    let isin = index.yt.lives.some(function(curval){
+		return curval.id == yEntry.videoId;
+	    })
+	    if (!isin){ytParse(yEntry)};
+	} else {
+	    break;
+	}
+    }
+
+    let online = feed.slice(0,i);
+    index.yt.lives.forEach(function(curval,ix){
+	let isin = online.some(function(newval){
+	    return curval.id == newval.itemSectionRenderer.contents[0].
+		shelfRenderer.content.expandedShelfContentsRenderer.items[0].
+		videoRenderer.videoId;
+	})
+	if (!isin){index.yt.lives.splice(ix,1)}
+    })
+}
+
+
+function ytParse(entry){    
+    fetch(entry.channelThumbnailSupportedRenderers.
+	  channelThumbnailWithLinkRenderer.thumbnail.thumbnails[0].url)
+	.then(resp => resp.blob())
+	.then(daBlob => {
+	    let info = {id: entry.videoId,
+			title: entry.title.simpleText,
+			thumbUrl: URL.createObjectURL(daBlob),
+			serv: "yt",
+			startTime: moment()
+		       }
+	    let timeNote = "開始時点不明";
+	    if (moment().diff(startUpTime) < 30000){
+		info.timeNote = timeNote;
+	    }
+	    index.yt.lives.unshift(info)
+	})
 }
