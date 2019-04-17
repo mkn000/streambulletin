@@ -46,7 +46,7 @@
 
     "browser_specific_settings":{
 	"gecko":{
-	    "update_url":"https://github.com/mkn000/streambulletin/blob/master/updates.json"
+	    "update_url":"https://raw.githubusercontent.com/mkn000/streambulletin/master/updates.json"
 	}
     }
 }
