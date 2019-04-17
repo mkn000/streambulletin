@@ -98,11 +98,17 @@ async function loginCheck(site){
 	}
 	break;
     case "yt":
-	let cy = browser.storage.local.get('ytauth');
-	cy.then(resp => {
-	    try { index.yt.login = resp.ytauth }
-	    catch(err){console.log(err)}
-		})
+	let ok;
+	let cy = await browser.cookies.get({name:"LOGIN_INFO",
+					    url:"https://www.youtube.com"})
+	
+	if (cy) {
+	    let ca = browser.storage.local.get('ytauth');
+	    ca.then(resp => {
+		try { index.yt.login = resp.ytauth }
+		catch(err){console.log(err)}
+	    })
+	}
 	break;
     }
     

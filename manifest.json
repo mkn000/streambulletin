@@ -42,5 +42,11 @@
     
     "web_accessible_resources": [
 	"background_script.js"
-    ]
+    ],
+
+    "browser_specific_settings":{
+	"gecko":{
+	    "update_url":"https://github.com/mkn000/streambulletin/blob/master/updates.json"
+	}
+    }
 }
