@@ -3,7 +3,9 @@
 	"{dc26bc61-511f-482c-b171-c0ab90fc1901}": {
 	    "updates":[
 		{"version": "0.1.2",
-		 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.1.2/stream_bulletin-0.1.2-fx.xpi"}
+		 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.1.2/stream_bulletin-0.1.2-fx.xpi"},
+		{"version": "0.1.3",
+		 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.1.3/stream_bulletin-0.1.3-fx.xpi"}
 	    ]
 	}
     }
