@@ -9,5 +9,5 @@ This extension monitors and displays currently live streams from followed source
 * TwitCasting
 * Openrec
 * Youtube
-## Install
+## Install / インストール
 **Firefox:** [Click](https://github.com/mkn000/streambulletin/releases/download/v0.1.2/stream_bulletin-0.1.2-fx.xpi)
