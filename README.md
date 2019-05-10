@@ -6,7 +6,8 @@ This extension monitors and displays currently live streams from followed source
 ## Supported sites / 利用サイト
 * niconama (community/channel)
 * whowatch
-* twitcasting
-* openrec
+* TwitCasting
+* Openrec
+* Youtube
 ## Install
 **Firefox:** [Click](https://github.com/mkn000/streambulletin/releases/download/v0.1.2/stream_bulletin-0.1.2-fx.xpi)
