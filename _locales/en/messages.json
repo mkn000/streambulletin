@@ -1,0 +1,31 @@
+{
+    "extensionDescription":{
+	"message": "Displays live broadcasts from followed sources",
+	"description": "Description of the extension."
+    },
+    
+    "loginStatusButton": {
+	"message": "Login status",
+	"description": "Text on the login status button."
+    },
+
+    "loginTip": {
+	"message": "Please login and press this button to receive live stream information",
+	"description": "Tooltip on sites where not logged in."
+    },
+
+    "loginOK":{
+	"message": "Logins OK",
+	"description": "Displayed when user is logged in to all supported sites."
+    },
+
+    "noStreams": {
+	"message": "No followed channels live at the moment",
+	"description": "Displayed when no live streams."
+    },
+
+    "timeFormat":{
+	"message": "MMM Do[,] HH:mm",
+	"description": "The format time is displayed in."
+    }
+}

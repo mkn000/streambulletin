@@ -1,67 +1,70 @@
-var show;
-var index;
-var baseUrls = {niconama:"https://live.nicovideo.jp/watch/lv",
-		whowatch:"https://whowatch.tv/viewer/",
-		orec:"https://www.openrec.tv/live/",
-		twc:"https://twitcasting.tv/",
-		yt:"https://www.youtube.com/watch?v="
-	       }
+var keys;
+var page;
+var style;
+var index = {nico: "ニコ生",
+	     whow: "whowatch",
+	     orec: "OPENREC",
+	     twc: "TwitCasting",
+	     yt: "YouTube"}
 
 document.addEventListener("DOMContentLoaded",async function(){
     let head = `Stream Bulletin v.${browser.runtime.getManifest().version}`;
-    document.getElementsByTagName("header")[0].textContent = head;
-    let page = await browser.runtime.getBackgroundPage();
-    index = page.index;
-    let getOption = await browser.storage.local.get();
-    show = getOption.show;
+    document.getElementById("verInfo").textContent = head;
+    page = await browser.runtime.getBackgroundPage();
+    keys = page.keys;
     menuSetup();
-    if (show == "all" || index[show].login){
-	getLives(show);
-    } else {
-	let pls = document.createElement("p");
-	pls.innerText = "ログインして、下の「リロード」ボタンを押してください。";
-	document.body.appendChild(pls);
-	let but = document.createElement("button");
-	but.innerText = "リロード";
-	but.className = "reloadButton";
-	but.addEventListener("click",function(){
-	    page.loginCheck(show);
-	    window.location.reload();
-	})
-	document.body.appendChild(but)
-    }
-    
+    getLives();
 })
 
 	
 function menuSetup(){
-    let menu = document.getElementsByClassName("selection");
-    for (let item of menu) {
-	if (item.id == show) {
-	    item.style.backgroundColor = "blue";
-	    item.style.color = "white";
-	} else if (item.id != "all" && !index[item.id].login){
-	    item.className = "selection offline";
+    let button = document.getElementsByClassName("loginButton")[0];
+    button.innerText = browser.i18n.getMessage("loginStatusButton");
+    
+    let box = document.createElement("input");
+    box.type = "checkbox";
+    box.addEventListener('change',() => {
+	let menu = document.getElementById("menu");
+	if (box.checked) {
+	    menu.style.display = "flex";
+	} else {
+	    menu.style.display = "none"
 	}
-	item.addEventListener("click",function(){
-	    let change = browser.storage.local.set({show:item.id})
-	    change.then(function(){window.location.reload()})
-	})
+    })
+    button.appendChild(box);
+    
+    let isOff = false;
+    let menu = document.getElementById("menu");
+    for (let item of keys) {
+	if  (!page[item].login){
+	    isOff = true;
+	    let offsite = document.createElement("span");
+	    offsite.innerText = index[item];
+	    offsite.className = "offline";
+	    offsite.title = browser.i18n.getMessage("loginTip");
+	    offsite.addEventListener("click",function(){
+		page[item].loginCheck();
+		setTimeout(() => window.location.reload(),250);
+	    })
+	    menu.appendChild(offsite);
+	}
+    }
+    if (!isOff) {
+	menu.innerText = browser.i18n.getMessage("loginOK");
+    } else {
+	button.style.backgroundColor = "red";
     }
 }
 
-function getLives(show){
+function getLives(){
     let lives = [];
-    if (show == "all"){
-	Object.entries(index).forEach(([key,value]) =>
-				      lives = lives.concat(value.lives));
-    } else {
-	lives = index[show].lives;
+    for (let key of keys){
+	lives = lives.concat(page[key].lives);
     }
     lives.sort(function(a,b){return b.startTime.diff(a.startTime)});
     if (lives.length == 0){
 	let nope = document.createElement("p");
-	nope.textContent = "現在、配信はありません";
+	nope.textContent = browser.i18n.getMessage("noStreams");
 	document.body.appendChild(nope);
     } else {
 	lives.forEach(crElements);
@@ -73,17 +76,20 @@ function crElements(ar){
     var info = document.createElement("div");
     info.id = ar.id;
     info.className = "live";
-    document.body.appendChild(info);
-    
-    var heading = document.createElement("div");
+    let startTime;
     if (ar.timeNote) {
-	heading.textContent = ar.timeNote;
+	startTime = ar.timeNote;
     } else {
-	heading.textContent =
-	    ar.startTime.local().format("M[月]D[日]　HH:mm[開始]");
+	startTime = ar.startTime.local().format(
+	    browser.i18n.getMessage("timeFormat"));
     }
-    heading.className = "time";
-    info.appendChild(heading);
+    info.title = `${startTime}\n${ar.title}`;
+    document.body.appendChild(info);
+
+    var channel = document.createElement("div")
+    channel.textContent = ar.channel;
+    channel.className = "channel";
+    info.appendChild(channel);
     
     var image = document.createElement("div");
     var icon = document.createElement("img");
@@ -91,14 +97,9 @@ function crElements(ar){
     icon.className = "icon";
     image.appendChild(icon);
     info.appendChild(image);
-
-    var content = document.createElement("div");
-    content.innerText = ar.title;
-    content.className = "title";
-    info.appendChild(content);
     
     document.getElementById(ar.id).addEventListener("click",function(){
-	browser.tabs.create({url:baseUrls[ar.serv]+ar.id});
+	browser.tabs.create({url:page[ar.serv].baseUrl+ar.id});
     })
 
 }

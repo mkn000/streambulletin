@@ -1,7 +1,7 @@
 let token;
 let ydb;
 window.indexedDB.open("swpushnotificationsdb",1).onsuccess = function(event){
-	    ydb= event.target.result;
+	    ydb = event.target.result;
 	    ydb.transaction(["swpushnotificationsstore"])
 		.objectStore("swpushnotificationsstore")
 		.get("IDToken").onsuccess = function(event){

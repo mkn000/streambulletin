@@ -1,50 +1,95 @@
 :root {
-    --content-width: 480px;
+    width: 380px;
 }
 
 body{
-    width: 500px;
     overflow: hidden auto;
 }
  
 
 header {
     font-family: Tahoma, Geneva, sans-serif;
+    width: 360px;
+    height: 20px;
+    margin-bottom: 10px;
 }
 
-.menu{
-    display: flex;
-    flex-direction: row;
-    /*border: 2px solid blue;
-    width: var(--content-width);
-    height: 30px;*/
+header > .container {
+    width: 50%;
+    float: left;
 }
+
+header > #verInfo {
+    width: 50%;
+    float: right;
+}
+
+.container {
+    position: relative;
+}
+
+.container .loginButton {
+    border: 2px solid black;
+    border-radius: 15px;
+    padding: 3px 6px;
+    cursor: pointer;
+}
+
+.loginButton:hover {
+    background-color: blue;
+    color:white;
+}
+
+.container input{
+    width:0;
+    height:0;
+    opacity:0;
+    position:absolute;
+}
+
+#menu{
+    float: left;
+    width: 360px;
+    display: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: relative;
+    left: 0px;
+    margin: 5px;
+    padding: 5px;
+}
+    
 
 span {
+    float: left;
+    display: flex;
+    position: relative;
     background-color: white;
     color: black;
-    border: 1px solid blue;
     padding: 5px 10px;
 }
 
 span.offline {
     background-color: red;
+    border: 1px solid black;
+    border-radius: 5px;
 }
 
 span:hover {
-    background-color: blue;
     color: white;
     cursor: pointer;
 }
 			 
 
 .live {
-    outline: 3px solid black;
+    display: flex;
+    position: relative;
     align-content: space-between;
-    height: 90px;
-    width: var(--content-width)-3px;
+    outline: 3px solid black;
+    height: 32px;
+    width: 360px;
     padding: 0px;
-    margin: 1px 0px;
+    margin: 2px 0px;
 }
 
 .live:hover{
@@ -52,40 +97,34 @@ span:hover {
     background-color: blue;
 }
 
-.time {
-    word-spacing: 3px;
-    margin: 5px 2px;
-    height: 15px;
-    width: var(--content-width);
-    clear: both;
+
+.channel{
+    position: absolute;
+    height: 32px;
+    line-height:32px;
+    left: 36px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 20px;
+    margin: auto;
 }
 
-
 .icon {
+    position: absolute;
+    top: -2px;
+    left: -2px;
     float: left;
-    height: 64px;
-    width: 64px;
+    height: 32px;
+    width: 32px;
     padding: 0px;
-    margin: 1px;
+    margin: 0px;
     border: 2px solid black;	
 }
 
 
-.title {
-    height: 64px;
-    width: var(--content-width)-70px;
-    margin: 3px 0px 2px 2px;
-    font-weight: bold;
-    overflow: hidden;
-}
-
-.reloadButton {
-    border: 2px solid black;
-    box-shadow: 10px;
-    background-color: #c3d0f4;
-    padding: 5px 10px;
-}
-
-.reloadButton:hover{
-    cursor: pointer;
+p {
+    float: left;
+    text-align: left;
+    margin: 5px 0px 5px 0px;
 }

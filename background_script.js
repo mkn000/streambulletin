@@ -1,437 +1,510 @@
-var index = {nico:{lives:[]},
-	     whow:{lives:[]},
-	     orec:{lives:[]},
-	     twc:{lives:[]},
-	     yt:{lives:[]}
-	    }
-var oh = ["Uuid","Token","Random"];//openrec login
-var oc = ["lang","device","init_dt"];//openrec header
-var tc = ["hl","did","tc_id","tc_ss"];//twitcasting login
-var option = {show: "all"};
-var startUpTime;
-browser.storage.local.set(option);
+var upInterval = 15*1000; //15 seconds
+var initTime;
+var nico,whow,orec,twc,yt,badgeStatus;
+var keys = ["nico","whow","orec","twc","yt"];
 
-window.addEventListener("online",function(){startUpTime = moment();
-					    console.log("works")});
+class Broadcast{
+    constructor(channel,id,title,startTime,thumbUrl,serv){
+	this.channel = channel;
+	this.id = id;
+	this.title = title;
+	this.startTime = startTime;
+	this.thumbUrl = thumbUrl;
+	this.serv = serv;
+    }
 
-(function startup(){
-    new Promise((resolve) => {
-	startUpTime = moment();
-	Object.entries(index).forEach(([key,value]) => loginCheck(key));
-	resolve();
-    })
-	.then(mainRoutine())
-})();
+    append(obj){
+	Object.entries(obj).forEach(entry => {
+	    this[entry[0]] = entry[1];
+	})
+    }
+}
 
-//check login status
-async function loginCheck(site){
-    switch(site) {
-    //niconama	
-    case "nico":
+class Serv{
+    constructor(){
+	this.lives = [];
+	this.login;
+	this.status;
+    }
+    
+    add(broadcast){
+	this.lives.push(broadcast);
+    }
+    
+    remove(ix) {
+	this.lives.splice(ix,1);
+    }
+
+    online(){
+	setTimeout(() => {
+	    (this.login) ? this.loginCheck() : {}
+	},5000)
+    }
+    
+    offline(){
+	if (typeof this.status == "number") {
+	    clearTimeout(this.status);
+	}
+	this.status = "offline";
+    }
+
+    errReport(err){
+	console.log(`${moment().local().format("Do MMM HH:mm")} | `+
+		    `${this.constructor.name} | ${err}\n--> Restarting app`);
+	(navigator.onLine) ? this.loginCheck() : this.offline()
+    }
+	
+}
+
+
+class Niconama extends Serv{
+    constructor(){
+	super();
+	this.baseUrl = "https://live.nicovideo.jp/watch/lv";
+	this.apiUrl = "https://live.nicovideo.jp/api/bookmark/"+
+	    "json?type=on_air";
+	this.loginCheck();
+    }
+    
+    loginCheck(){
 	let cn = browser.cookies.get({name: "user_session",
-				      url: "https://www.nicovideo.jp"})
-	cn.then(cookie => {(cookie) ? index.nico.login = true : {}})
-	cn.catch(err => console.log(err))
-	break;
-    //whowatch	
-    case "whow":
+				      url: "https://www.nicovideo.jp"});
+	cn.then(cookie => {
+	    if (cookie){
+		this.login = true;
+		this.routine();
+	    }
+	})
+    }
+
+    routine(){
+	fetch(this.apiUrl)
+	    .then(resp => resp.json())
+	    .then(data => this.nicoCheck(data.bookmarkStreams))
+	    .then(() =>{this.status = setTimeout(
+		() => this.routine(),upInterval)})
+	    .catch(err => this.errReport(err))
+    }
+
+    nicoCheck(data){
+	this.lives.forEach((rec,ix) => {
+	    let isIn = data.some(live => {return rec.id == live.id});
+	    if (!isIn) {this.remove(ix)}
+	})
+
+	data.forEach(live => {
+	    let isIn = this.lives.some(rec => {return live.id == rec.id})
+	    if (!isIn) {this.nicoAdd(live)}
+	})
+    }
+
+    async nicoAdd(live){
+	let more = await fetch(`https://live2.nicovideo.jp/watch/lv${live.id}`+
+			       `/programinfo`).then(resp => resp.json())
+	let startTime = moment.unix(more.data.beginAt);
+	let channel = more.data.socialGroup.name;
+	fetch(live._communityinfo.thumbnail)
+	    .then(resp => resp.blob())
+	    .then(blob => {
+		this.add(new Broadcast(channel,
+				       live.id,
+				       live.title,
+				       startTime,
+				       URL.createObjectURL(blob),
+				       "nico"
+				      )
+			)
+	    })
+	    .catch(err => this.errReport(err))
+    }
+}
+
+class Whowatch extends Serv{
+    constructor(){
+	super();
+	this.baseUrl = "https://whowatch.tv/viewer/";
+	this.apiUrl = "https://api.whowatch.tv/lives?category_id=0"+
+	    "&list_type=popular";
+	this.loginCheck();
+    }
+
+    loginCheck(){
 	fetch("https://api.whowatch.tv/users/me/profile")
 	    .then(resp => resp.json())
 	    .then(data => {
 		if (data.name){
-		    index.whow.login = true;
+		    this.login = true;
+		    this.routine();
 		}
 	    })
 	    .catch(err => console.log(err))
-	break;
-    //openrec
-    case "orec":
-	arr = [];
-	for (let item of [...oh.map(x => x.toLowerCase()),...oc]) {
-	    let co2 = browser.cookies.get({name:item,
-					   url:"https://www.openrec.tv"});
-	    co2.then(cookie => arr.push(cookie))
-	}
-	
-	let co = new Promise((resolve) =>
-			     setTimeout(function(){resolve(arr)},100));
-	co.then(cookies => {
-	    if (cookies){
-		let cookie = "";
-		let params = new URLSearchParams();
-		for (let val of cookies) {
-		    if (oc.find(function(h){return val.name==h;})){
-			cookie = cookie+`${val.name}=${val.value}; `
-		    }
+    }
 
-		    let ix = oh.findIndex(function(o){
-			let x = o.localeCompare(val.name,undefined,
-						{sensitivity:'base'})
-			return (x == 0) ? true:false;
-		    })
+    routine(){
+	fetch(this.apiUrl)
+	    .then(resp => resp.json())
+	    .then(data => this.whowCheck(data[0].popular))
+	    .then(() => {this.status = setTimeout(
+		() => this.routine(),upInterval)})
+	    .catch(err => console.log(err))
+    }
+
+    whowCheck(data){
+	let i;
+	for (i=0;i < data.length; i++){
+	    if (data[i].is_follow){
+		let isIn = this.lives.some(rec => {
+		    return data[i].id == rec.id;
+		})
+		if (!isIn) {this.whowAdd(data[i])}
+	    } else if (data[i].user.is_admin){
+		continue;
+	    } else {
+		break;
+	    }
+	}
+
+	let online = data.slice(0,i);
+	this.lives.forEach((rec,ix) => {
+	    let isIn = online.some(live => {
+		return live.id == rec.id;
+	    })
+	    if (!isIn) {this.remove(ix)}
+	})
+    }
+
+    whowAdd(live){
+	fetch(live.user.icon_url)
+	    .then(resp => resp.blob())
+	    .then(blob => {
+		this.add(new Broadcast(live.user.name,
+				       live.id,
+				       live.title,
+				       moment(live.started_at),
+				       URL.createObjectURL(blob),
+				       "whow"
+				      )
+			)
+	    })
+	    .catch(err => this.errReport(err))
+    }
 		    
-		    if (ix >= 0){
-			params.set(oh[ix],val.value);
+		 
+}
+
+class Openrec extends Serv{
+    constructor(){
+	super();
+	this.baseUrl = "https://www.openrec.tv/live/";
+	this.apiUrl = "https://www.openrec.tv/viewapp/api/v3/timeline/more";
+	this.loginCheck();
+    }
+
+    async loginCheck(){
+	let params = new URLSearchParams();
+	for (let item of ["Uuid","Token","Random"]){
+	    let co = await browser.cookies.get({name:item.toLowerCase(),
+						url:"https://www.openrec.tv"});
+	    if (co){
+		params.set(item,co.value);
+	    } else {
+		params = false;
+		break;
+	    }
+	}
+	if(params){
+	    this.login = params.toString();
+	    let cookie = [];
+	    for (let item of ["lang","device","init_dt"]){
+		let co =
+		    await browser.cookies.get({name:item,
+					       url: "https://www.openrec.tv"});
+		cookie.push(`${item}=${co.value}`);
+	    }
+	    this.cookie = cookie.join('; ');
+	    this.routine();
+	} else {
+	    this.login = false;
+	}
+    }
+
+    async routine(){
+	let last_page = false;
+	let live = [];
+	for (let page=1; !last_page;++page){
+	    let odata =
+		await fetch(this.apiUrl+
+			    `?${this.login}&page_number=${page}&term=1`,
+			    {headers:{'Cookie':this.cookie}})
+		.then(resp => resp.json())
+		.catch(err => this.errReport(err))
+	    if (odata.data.items){
+		for (let item of odata.data.items){
+		    if(item.movie_live.onair_status == 1){
+			live.push(item);
 		    }
 		}
-		Object.assign(index.orec,{cookie:cookie.slice(0,-2),
-					  login: params.toString()});
 	    }
+	    last_page = odata.data.is_last_page;
+	    setTimeout(() => {},100);
+	}
+	this.openRecCheck(live);
+	this.status = setTimeout(() => this.routine(),upInterval);
+    }
+
+    openRecCheck(data){
+	this.lives.forEach((rec,ix) => {
+	    let isIn = data.some(live => live.identify_id == rec.id);
+	    if (!isIn) {this.remove(ix)}
 	})
-	break;
-    //twitcasting
-    case "twc":
-	cookie2 = "";
+
+	data.forEach(live => {
+	    let isIn = this.lives.some(rec =>
+				       {return rec.id == live.identify_id});
+	    if (!isIn) {this.openRecAdd(live)}
+	})
+    }
+
+    openRecAdd(live){
+	fetch(live.user_icon)
+	    .then(resp => resp.blob())
+	    .then(blob => {
+		let startTime = moment.tz(live.movie_live.onair_start_dt,
+					  "YYYY-MM-DD HH:mm:ss","Asia/Tokyo");
+		this.add(new Broadcast(live.user_name,
+				       live.identify_id,
+				       live.meta_data,
+				       startTime,
+				       URL.createObjectURL(blob),
+				       "orec"
+				      )
+			)
+	    })
+	    .then(err => this.errReport(err))
+    }
+}
+
+class Twitcasting extends Serv{
+    constructor(){
+	super();
+	this.baseUrl = "https://twitcasting.tv/";
+	this.loginCheck();
+    }
+
+    async loginCheck(){
+	let cookie = [];
 	let broken;
-	for (let item of tc){
-	    let ctc = await browser.cookies.get({name: item,
-						 url: "https://twitcasting.tv"})
-	    if (ctc) {
-		cookie2 = cookie2+`${ctc.name}=${ctc.value}; `;
+	for (let item of ['hl','did','tc_id','tc_ss']){
+	    let tc = await browser.cookies.get({name:item,
+						url:"https://twitcasting.tv"})
+	    if(tc){
+		cookie.push(`${item}=${tc.value}`);
 	    } else {
 		broken = true;
 		break;
 	    }
 	}
 	if (!broken) {
-	    Object.assign(index.twc,{login:cookie2.slice(0,-2)});
+	    this.login = cookie.join('; ');
+	    this.routine();
 	}
-	break;
-    case "yt":
-	let ok;
-	let cy = await browser.cookies.get({name:"LOGIN_INFO",
-					    url:"https://www.youtube.com"})
-	
-	if (cy) {
-	    let ca = browser.storage.local.get('ytauth');
-	    ca.then(resp => {
-		try { index.yt.login = resp.ytauth }
-		catch(err){console.log(err)}
-	    })
-	}
-	break;
     }
-    
-}
 
-//fetch live information every 15 seconds
-function mainRoutine(){
-    setTimeout(function(){
-	updateFun();
-	mainRoutine();
-    },15*1000)
-}
-
-function updateFun() {
-    if ( Object.keys(index).some(key => key.login)) {
-	browser.browserAction.setTitle(
-	    {title:"Stream Bulletin - ログインしてください"})
-	browser.browserAction.setBadgeTextColor({color: "red"});
-	browser.browserAction.setBadgeText({text:"0"});
-	browser.browserAction.setBadgeBackgroundColor({color:"red"});
-    } else {
-	//niconama
-	if (index.nico.login){
-	    fetch("https://live.nicovideo.jp/api/bookmark/json?type=on_air")
-		.then(resp => resp.json())
-		.then(data => nicoCheck(data.bookmarkStreams))
-		.catch(err => console.log(err))
-	}
-	//whowatch
-	if (index.whow.login){
-	    fetch("https://api.whowatch.tv/lives?category_id=0"+
-		  "&list_type=popular")
-		.then(resp => resp.json())
-		.then(data => whowCheck(data[0].popular))
-		.catch(err => console.log(err))
-	}
-	//openrec
-	if (index.orec.login){
-	    let page = 0;
-	    let oLive = [];
-	    (function orecFetch(){
-		++page;
-		p = new Promise((resolve) => {
-		fetch('https://www.openrec.tv/viewapp/api/v3/timeline/more?'+
-		      index.orec.login+`&page_number=${page}&term=1`,
-		      {headers:{'Cookie':index.orec.cookie}}
-		     )
-			.then(resp => resp.json())
-			.then(od => {
-			    if (od.data.hasOwnProperty("items")) {
-				od.data.items.forEach(function(entry){
-				    if (entry.movie_live.onair_status == 1){
-					oLive.push(entry);
-				    }
-				})
-			    }
-			    resolve(function(){return od.data.is_last_page});
-			});
-		});
-		p.then(last_page => last_page ? orecCheck(oLive) : orecFetch())
-		p.catch(err => console.log(err))
-	    })();
-	}
-
-	 //twitcasting
-	 if (index.twc.login){
-	     fetch('https://twitcasting.tv/',
-		   {headers:{'Cookie':index.twc.login}})
-		 .then(resp => resp.text())
-		 .then(html => {let parser = new DOMParser();
-				let doc = parser.parseFromString(
-				    html,"text/html");
-				return doc;
-			       })
-		 .then(pg => {
-		     let online =
-			 pg.getElementsByClassName("tw-index-support-column");
-		     twcCheck(Array.from(online));
-		 })
-		 .catch(err => console.log(err))
-	 }
-
-	//youtube
-	if (index.yt.login) {
-	    fetch('https://www.youtube.com/feed/subscriptions?flow=2&pbj=1',
-		  {headers:index.yt.login})
-		.then(resp => resp.json())
-		.then(data => ytCheck(data))
-	}
-	
-	 //toolbar icon
-	let total = 0;
-	Object.entries(index).forEach(([key,value]) =>
-				      total += value.lives.length);
-	browser.browserAction.setBadgeText({text: total.toString()});
-	browser.browserAction.setBadgeBackgroundColor({color: "blue"});
-    }
-}
-    
-//niconama
-function nicoCheck(ar){
-//Check that internal list matches fetched list
-    //check if ended broadcast needs to be removed from internal list
-    index.nico.lives.forEach(function(curval,ix){
-	let isin = ar.some(function(newval){
-	    return curval.id == newval.id;
-	})	
-	if (!isin){index.nico.lives.splice(ix,1);}
-    })
-    
-    //check if new broadcast needs to be added to internal list
-    ar.forEach(function(newval){
-	let isin = index.nico.lives.some(function(curval){
-	    return newval.id == curval.id;
-	})
-	if (!isin){nicoParse(newval)}
-    })
-}
-    
-function nicoParse(arr){
-//format niconama broadcast info
-    
-    fetch("https://live2.nicovideo.jp/watch/lv"+arr.id+"/programinfo")
-	.then(resp => resp.json())
-	.then(moreInfo => {
-	    let jpTime = moment.unix(moreInfo.data.beginAt);
-	    let supInfo = {name:moreInfo.data.broadcaster.name,
-			   startTime:jpTime
-			  }
-	    return supInfo;
-	})
-	.then(supInfo => {
-	    let img = "";
-	    let blob = fetch(arr._communityinfo.thumbnail)
-		.then(resp => resp.blob())
-		.then(daBlob => {
-		    let housou = {id:arr.id,
-				  title:arr.title,
-				  thumbUrl:URL.createObjectURL(daBlob),
-				  serv:"niconama"
-				 }
-		    index.nico.lives.unshift({...supInfo,...housou})
-		})
-	})
-}
-
-//whowatch
-function whowCheck(ar){
-    //check that whowatch live list matches internal list
-
-    //check if new broadcast needs to be added
-    for (i=0;i < ar.length; i++){
-	if (ar[i].is_follow){
-	    let isin = index.whow.lives.some(function(cur){
-		return ar[i].id == cur.id;
+    routine(){
+	fetch(this.baseUrl,{headers:{'Cookie':this.login}})
+	    .then(resp => resp.text())
+	    .then(html => {
+		let parser = new DOMParser();
+		let doc = parser.parseFromString(html,"text/html")
+		return doc;
 	    })
-	    if (!isin){whowParse(ar[i])}
-	} else if (ar[i].user.is_admin){
-	    continue;
+	    .then(page => {
+		let online =
+		    page.getElementsByClassName("tw-index-support-column");
+		this.twitcastCheck(Array.from(online));
+	    })
+	    .then(() => {this.status = setTimeout(() =>
+						  this.routine(),upInterval)})
+	    .catch(err => this.errReport(err))
+    }
+
+    twitcastCheck(data){
+	this.lives.forEach((rec,ix) => {
+	    let isIn = data.some(live => {
+		let user = live.children[0].pathname.split('/')[1];
+		return user == rec.id;
+	    })
+	    if (!isIn) {this.remove(ix)}
+	})
+
+	data.forEach(live => {
+	    let user = live.children[0].pathname.split('/')[1];
+	    let isIn = this.lives.some(rec => {return rec.id == user});
+	    if (!isIn) {this.twitcastAdd(user)}
+	})
+    }
+
+    twitcastAdd(live){
+	fetch(this.baseUrl+live)
+	    .then(resp => resp.text())
+	    .then(async html => {
+		let resp2 =
+		    await fetch(this.baseUrl+`userajax.php?c=status&u=${live}`)
+		    .then(resp => resp.json())
+		let dur = moment()-moment.duration(resp2.duration,'seconds');
+		let parser = new DOMParser();
+		let doc = parser.parseFromString(html,"text/html");
+		let title = doc.getElementById("movietitle").innerText.trim();
+		let channel = doc.
+		    getElementsByClassName("tw-live-author__info-username")[0]
+		    .innerText.trim();
+		let thumb = doc.getElementsByClassName("authorthumbnail")[0]
+		    .attributes.src.nodeValue;
+		let blob =
+		    await fetch("https:"+thumb).then(resp => resp.blob())
+		this.add(new Broadcast(channel,
+				       live,
+				       title,
+				       moment(dur),
+				       URL.createObjectURL(blob),
+				       "twc"
+				      )
+			)
+	    })
+	    .catch(err => this.errReport(err))
+    }
+				       
+		  
+    
+}
+    
+class Youtube extends Serv{
+    constructor(){
+	super();
+	this.baseUrl = "https://www.youtube.com/watch?v=";
+	this.apiUrl = "https://www.youtube.com/feed/subscriptions?"+
+	    "flow=2&pbj=1";
+	this.loginCheck();
+    }
+
+    async loginCheck(){
+	let cy = await browser.cookies.get({name: "LOGIN_INFO",
+					    url: "https://www.youtube.com/"});
+	let cy2 = await browser.storage.local.get('ytauth');
+	if (cy && cy2.hasOwnProperty('ytauth')){
+	    this.login = cy2.ytauth;
+	    setTimeout(() => this.routine(),200);
 	} else {
-	    break;
+	    this.login = false;
 	}
     }
 
-    //check if ended broadcast needs to be removed
-    let online = ar.slice(0,i);
-    index.whow.lives.forEach(function(curval,ix){
-	let isin = online.some(function(newval){
-	    return newval.id == curval.id;
-	})
-	if (!isin){index.whow.lives.splice(ix,1)}
-    })
-}
-
-function whowParse(entry){
-    //format whowatch broadcast info
-    fetch(entry.user.icon_url)
-	.then(resp => resp.blob())
-	.then(daBlob => {
-	    let jpTime = moment(entry.started_at);
-	    let info = {name: entry.user.name,
-			startTime: jpTime,
-			title: entry.title,
-			id: entry.id,
-			thumbUrl: URL.createObjectURL(daBlob),
-			serv: "whowatch"
-		       }
-	    index.whow.lives.unshift(info);
-	})
-}
-
-//openrec
-function orecCheck(data){
-    //check if ended broadcast needs to removed
-    index.orec.lives.forEach(function(curval,ix){
-	let isin = data.some(function(newval){
-	    return newval.identify_id == curval.id;
-	})
-	if (!isin) {index.orec.lives.splice(ix,1);}
-    })	
-    
-    //check if openrec broadcast needs to be added
-    data.forEach(function(entry){
-	let isin = index.orec.lives.some(function(curval){
-	    return curval.id == entry.identify_id;
-	})
-	if (!isin) {orecParse(entry);}
-    })	
-}
-
-function orecParse(entry){
-    //format openrec broadcast info
-    let jpTime = moment.tz(entry.movie_live.onair_start_dt,
-			   "YYYY-MM-DD HH:mm:ss","Asia/Tokyo");
-
-    let info = {name: entry.user_name,
-		startTime: jpTime,
-		title: entry.meta_data,
-		id: entry.identify_id,
-		thumbUrl: entry.user_icon,
-		serv: "orec"
-	       }
-    index.orec.lives.unshift(info);
-}
-
-//twitcasting
-function twcCheck(ar){
-    //check if broadcast needs to be removed
-    index.twc.lives.forEach(function(curval,ix){
-	let isin = ar.some(function(newval){
-	    let user = newval.children[0].pathname.split('/')[1];
-	    return user == curval.id;
-	})
-	if (!isin) {index.twc.lives.splice(ix,1)}
-    })
-
-    //check if broadcast needs to be added
-    ar.forEach(function(entry){
-	let user = entry.children[0].pathname.split('/')[1];
-	let isin = index.twc.lives.some(function(curval){
-	    return curval.id == user;
-	})
-	if (!isin) {twcParse(user)}
-    })
-}
-
-function twcParse(path){
-    let info = {}
-    fetch("https://twitcasting.tv/"+path)
-	.then(resp => resp.text())
-	.then(html => {
-	    fetch("https://twitcasting.tv/userajax.php?c=status&u="+path)
-		.then(resp => resp.json())
-		.then(data => {
-		    let sTime =
-			moment.now()-moment.duration(data.duration,'seconds');
-		    Object.assign(info,{startTime:moment(sTime)});
-		})
-	    	    
-	    let parser = new DOMParser();
-	    let doc = parser.parseFromString(html,"text/html")
-	    Object.assign(info,{
-		title:doc.getElementById("movietitle").innerText,
-		id:path,
-		serv:"twc"
-	    })
-	    let imgurl =
-		doc.getElementsByClassName("authorthumbnail")[0].
-		attributes.src.nodeValue;
-	    fetch("https:"+imgurl)
-		.then(resp => resp.blob())
-		.then(daBlob => {
-		    Object.assign(info,{thumbUrl:URL.createObjectURL(daBlob)})
-		})
-	})
-	.then(()=>{index.twc.lives.unshift(info);return true})
-	.catch(p => console.log(p))
-}
-
-function ytCheck(arr){
-    let feed = arr[1].response.contents.twoColumnBrowseResultsRenderer.
-	tabs[0].tabRenderer.content.sectionListRenderer.contents;
-    for (i=0;i < feed.length-1;i++){
-	let yEntryTop = feed[i].itemSectionRenderer.contents[0].shelfRenderer;
-	if (yEntryTop.title.simpleText == 'Live'){
-	    let yEntry = yEntryTop.content.expandedShelfContentsRenderer.
-		items[0].videoRenderer;
-	    let isin = index.yt.lives.some(function(curval){
-		return curval.id == yEntry.videoId;
-	    })
-	    if (!isin){ytParse(yEntry)};
-	} else {
-	    break;
-	}
+    routine(){
+	fetch(this.apiUrl,{headers: this.login})
+	    .then(resp => resp.json())
+	    .then(data => this.youtubeCheck(data))
+	    .then(() => {this.status = setTimeout(() =>
+						  this.routine(),upInterval)})
+	    .catch(err => this.errReport(err))
     }
 
-    let online = feed.slice(0,i);
-    index.yt.lives.forEach(function(curval,ix){
-	let isin = online.some(function(newval){
-	    return curval.id == newval.itemSectionRenderer.contents[0].
-		shelfRenderer.content.expandedShelfContentsRenderer.items[0].
-		videoRenderer.videoId;
-	})
-	if (!isin){index.yt.lives.splice(ix,1)}
-    })
-}
-
-
-function ytParse(entry){    
-    fetch(entry.channelThumbnailSupportedRenderers.
-	  channelThumbnailWithLinkRenderer.thumbnail.thumbnails[0].url)
-	.then(resp => resp.blob())
-	.then(daBlob => {
-	    let info = {id: entry.videoId,
-			title: entry.title.simpleText,
-			thumbUrl: URL.createObjectURL(daBlob),
-			serv: "yt",
-			startTime: moment()
-		       }
-	    let timeNote = "開始時点不明";
-	    if (moment().diff(startUpTime) < 30000){
-		info.timeNote = timeNote;
+    youtubeCheck(data){
+	let i = 0;
+	let online = [];
+	let feed = data[1].response.contents.twoColumnBrowseResultsRenderer.
+	    tabs[0].tabRenderer.content.sectionListRenderer.contents;
+	feed.forEach(item => {
+	    let yTop = item.itemSectionRenderer.contents[0].shelfRenderer;
+	    if (yTop.title.simpleText == 'Live'){
+		online.push(item);
+		let y = yTop.content.expandedShelfContentsRenderer.items[0]
+		    .videoRenderer;
+		let isIn = this.lives.some(rec => {
+		    return rec.id == y.videoId});
+		if (!isIn){this.youtubeAdd(y)}
 	    }
-	    index.yt.lives.unshift(info)
 	})
+
+	this.lives.forEach((rec,ix) => {
+	    let isIn = online.some(live => {
+		return rec.id == live.itemSectionRenderer.contents[0].
+		shelfRenderer.content.expandedShelfContentsRenderer.items[0].
+		    videoRenderer.videoId;
+	    })
+	    if (!isIn) {this.remove(ix)}
+	})
+    }
+
+    youtubeAdd(live){
+	fetch(live.channelThumbnailSupportedRenderers.
+	      channelThumbnailWithLinkRenderer.thumbnail.thumbnails[0].url)
+	    .then(resp => resp.blob())
+	    .then(blob => {
+		let stream = new Broadcast(live.ownerText.runs[0].text,
+					   live.videoId,
+					   live.title.simpleText,
+					   moment(),
+					   URL.createObjectURL(blob),
+					   "yt"
+					  )
+		if (moment().diff(initTime) > 20000){
+		    stream.append({timeNote:"開始時点不明"})
+		}
+		this.add(stream);
+	    })
+	    .catch(err => this.errReport(err))
+    }
+    
 }
+
+class badgeUpdater{
+    constructor(){
+	this.status;
+	this.update();
+    }
+
+    update(){
+	this.status = setInterval(() => {
+	    let total = 0;
+	    for (let item of keys){
+		total += window[item].lives.length;
+	    }
+	    browser.browserAction.setBadgeText({text: total.toString()});
+	    browser.browserAction.setBadgeBackgroundColor({color: "blue"});
+	},upInterval/5)
+    }
+
+    offline(){
+	clearInterval(this.status);
+	this.status = "offline";
+	browser.browserAction.setBadgeText({text: ""});
+	browser.browserAction.setBadgeBackgroundColor({color: "red"});
+    }
+}
+
+(function startUp(){
+    initTime = moment();
+    nico = new Niconama();
+    whow = new Whowatch();
+    orec = new Openrec();
+    twc = new Twitcasting();
+    yt = new Youtube();
+    badgeStatus = new badgeUpdater();
+})();
+
+
+window.addEventListener("online",() => {
+    initTime = moment();
+    this.badgeStatus.update();
+    for (let item of keys){
+	this[item].online();
+    }
+})
+
+window.addEventListener("offline",() => {
+    this.badgeStatus.offline()
+    for (let item of keys){
+	this[item].offline();
+    }
+})
+			

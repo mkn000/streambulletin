@@ -1,0 +1,32 @@
+{
+    "extensionDescription":{
+	"message": "このアドンはとあるサイトを監視しており、フォロー中チャンネルなどを配信中の場合で示しています。",
+	"description": "Description of the extension."
+    },
+    
+    "loginStatusButton": {
+	"message": "ログイン状態",
+	"description": "Text on the login status button."
+    },
+
+    "loginTip": {
+	"message": "同サイトで利用したいならログインして、このボタンをクリックしてください",
+	"description": "Tooltip on sites where not logged in."
+    },
+
+    "loginOK":{
+	"message": "ログイン全部OKです",
+	"description": "Displayed when user is logged in to all supported sites."
+    },
+    
+    "noStreams": {
+	"message": "現在、配信はありません。",
+	"description": "Displayed when no live streams."
+    },
+
+    "timeFormat": {
+	"message": "M[月]D[日]　HH:mm",
+	"description": "The format time is displayed in."
+    }
+    
+}

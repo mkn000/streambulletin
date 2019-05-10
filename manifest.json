@@ -1,17 +1,18 @@
 {
     "manifest_version": 2,
     "name": "Stream Bulletin",
-    "version": "0.1.3",
+    "version": "0.2",
 
-    "description": "Displays live broadcasts from followed sources",
+    "description": "__MSG_extensionDescription__",
+    "default_locale": "en",
     "icons":{
 	"128":"icon128.png"
     },
 
     "background": {
-	"scripts":["browser-polyfill.js",
-		   "moment.js",
-		   "moment-timezone-with-data.js",
+	"scripts":["libs/browser-polyfill.js",
+		   "libs/moment.js",
+		   "libs/moment-timezone-with-data.js",
 		   "background_script.js"]
     },
 
@@ -24,7 +25,8 @@
     "content_scripts":[
 	{
 	    "matches": ["*://*.youtube.com/*"],
-	    "js": ["ytlogin.js"]
+	    "js": ["libs/browser-polyfill.js",
+		   "ytlogin.js"]
 	}
     ],
     
@@ -36,6 +38,7 @@
 	"https://*.cdn.nimg.jp/*",
 	"https://*.whowatch.tv/*",
 	"https://*.openrec.tv/*",
+	"https://*.hayabusa.io/*",
 	"https://*.twitcasting.tv/*",
 	"https://*.youtube.com/*"
     ],
