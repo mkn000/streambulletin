@@ -9,9 +9,11 @@ body{
 
 header {
     font-family: Tahoma, Geneva, sans-serif;
-    width: 360px;
-    height: 20px;
-    margin-bottom: 10px;
+    width: 370px;
+    height: 25px;
+    margin-bottom: 14px;
+    -moz-user-select: none;
+    user-select: none;
 }
 
 header > .container {
@@ -22,6 +24,7 @@ header > .container {
 header > #verInfo {
     width: 50%;
     float: right;
+    text-align: right;
 }
 
 .container {
@@ -49,7 +52,7 @@ header > #verInfo {
 
 #menu{
     float: left;
-    width: 360px;
+    width: 370px;
     display: none;
     flex-direction: row;
     flex-wrap: wrap;
@@ -87,14 +90,17 @@ span:hover {
     align-content: space-between;
     outline: 3px solid black;
     height: 32px;
-    width: 360px;
+    width: 370px;
     padding: 0px;
     margin: 2px 0px;
+    -moz-user-select: none;
+    user-select: none;
 }
 
 .live:hover{
     color: white;
     background-color: blue;
+    cursor: pointer;
 }
 
 
@@ -103,6 +109,7 @@ span:hover {
     height: 32px;
     line-height:32px;
     left: 36px;
+    width: 325px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

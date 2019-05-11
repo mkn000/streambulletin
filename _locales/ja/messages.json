@@ -15,7 +15,7 @@
     },
 
     "loginOK":{
-	"message": "ログイン全部OKです",
+	"message": "ログインすべてOKです",
 	"description": "Displayed when user is logged in to all supported sites."
     },
     
@@ -27,6 +27,11 @@
     "timeFormat": {
 	"message": "M[月]D[日]　HH:mm",
 	"description": "The format time is displayed in."
+    },
+
+    "startUnclear":{
+	"message": "開始時点不明",
+	"description": "When the exact start time of a stream is unclear."
     }
     
 }

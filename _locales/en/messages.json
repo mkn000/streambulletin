@@ -27,5 +27,10 @@
     "timeFormat":{
 	"message": "MMM Do[,] HH:mm",
 	"description": "The format time is displayed in."
+    },
+
+    "startUnclear":{
+	"message": "Start time unavailable",
+	"description": "When the exact start time of a stream is unclear."
     }
 }

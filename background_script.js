@@ -137,7 +137,7 @@ class Whowatch extends Serv{
 		    this.routine();
 		}
 	    })
-	    .catch(err => console.log(err))
+	    .catch(err => this.errReport(err))
     }
 
     routine(){
@@ -146,7 +146,7 @@ class Whowatch extends Serv{
 	    .then(data => this.whowCheck(data[0].popular))
 	    .then(() => {this.status = setTimeout(
 		() => this.routine(),upInterval)})
-	    .catch(err => console.log(err))
+	    .catch(err => this.errReport(err))
     }
 
     whowCheck(data){
@@ -393,6 +393,7 @@ class Youtube extends Serv{
 	let cy2 = await browser.storage.local.get('ytauth');
 	if (cy && cy2.hasOwnProperty('ytauth')){
 	    this.login = cy2.ytauth;
+	    initTime = moment();
 	    setTimeout(() => this.routine(),200);
 	} else {
 	    this.login = false;
@@ -447,8 +448,8 @@ class Youtube extends Serv{
 					   URL.createObjectURL(blob),
 					   "yt"
 					  )
-		if (moment().diff(initTime) > 20000){
-		    stream.append({timeNote:"開始時点不明"})
+		if (moment().diff(initTime) < 20000){
+		    stream.append({startUnclear: true})
 		}
 		this.add(stream);
 	    })

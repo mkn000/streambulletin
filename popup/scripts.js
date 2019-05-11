@@ -77,8 +77,8 @@ function crElements(ar){
     info.id = ar.id;
     info.className = "live";
     let startTime;
-    if (ar.timeNote) {
-	startTime = ar.timeNote;
+    if (ar.startUnclear) {
+	startTime = browser.i18n.getMessage("startUnclear");
     } else {
 	startTime = ar.startTime.local().format(
 	    browser.i18n.getMessage("timeFormat"));
