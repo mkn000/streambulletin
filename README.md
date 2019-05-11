@@ -10,4 +10,4 @@ This extension monitors and displays currently live streams from followed source
 * Openrec
 * Youtube
 ## Install / インストール
-**Firefox:** [Click](https://github.com/mkn000/streambulletin/releases/download/v0.2/stream_bulletin-0.2-fx.xpi)
+**Firefox:** [Click](https://github.com/mkn000/streambulletin/releases/download/v0.2.1/stream_bulletin-0.2.1-fx.xpi)
