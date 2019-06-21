@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Stream Bulletin",
-    "version": "0.2.1",
+    "version": "0.2.2",
 
     "description": "__MSG_extensionDescription__",
     "default_locale": "en",
@@ -40,7 +40,9 @@
 	"https://*.openrec.tv/*",
 	"https://*.hayabusa.io/*",
 	"https://*.twitcasting.tv/*",
-	"https://*.youtube.com/*"
+	"https://*.youtube.com/*",
+	"https://*.fc2.com/*",
+	"https://raw.githubusercontent.com/mkn000/streambulletin/*"
     ],
     
     "web_accessible_resources": [

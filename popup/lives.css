@@ -1,5 +1,8 @@
+
 :root {
-    width: 380px;
+    width: 385px;
+    -moz-user-select: none;
+    user-select: none;
 }
 
 body{
@@ -12,8 +15,6 @@ header {
     width: 370px;
     height: 25px;
     margin-bottom: 14px;
-    -moz-user-select: none;
-    user-select: none;
 }
 
 header > .container {
@@ -25,6 +26,13 @@ header > #verInfo {
     width: 50%;
     float: right;
     text-align: right;
+}
+
+#verInfo ~ .update{
+    border: 2px solid black;
+    border-radius: 15px;
+    padding: 3px 6px;
+    cursor: pointer;
 }
 
 .container {
@@ -118,6 +126,7 @@ span:hover {
 }
 
 .icon {
+    object-fit: cover;
     position: absolute;
     top: -2px;
     left: -2px;

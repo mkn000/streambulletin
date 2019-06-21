@@ -32,5 +32,10 @@
     "startUnclear":{
 	"message": "Start time unavailable",
 	"description": "When the exact start time of a stream is unclear."
+    },
+
+    "updateAvailable":{
+	"message": "Update available",
+	"description": "When a new version of the app is available."
     }
 }

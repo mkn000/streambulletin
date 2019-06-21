@@ -32,6 +32,11 @@
     "startUnclear":{
 	"message": "開始時点不明",
 	"description": "When the exact start time of a stream is unclear."
+    },
+
+    "updateAvailable":{
+	"message": "アップデートあり",
+	"description": "When a new version of the app is available."
     }
     
 }
