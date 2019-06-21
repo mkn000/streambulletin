@@ -17,5 +17,5 @@ This extension monitors and displays currently live streams from followed source
 
 Download the `streambulletin_chrome.zip` and extract it to convenient location. In `chrome://extensions` enable `Developer mode` from the top right. Click `Load unpacked` and select the previously extracted `streambulletin_chrome` folder.
 
-上の`streambulletin_chrome.zip`をダウンロード、便利なところに解凍して。　Chromeで`chrome://extensions`を開け、右上で`デベロッパーモード`を有効にして。　`パッケージ化されていない・・・`ボタンをくりっくして、先解凍された`streambulletin_chrome`というフォルダーを選択してください。
+上の`streambulletin_chrome.zip`をダウンロード、便利なところに解凍して。　Chromeで`chrome://extensions`を開け、右上で`デベロッパーモード`を有効にして。　`パッケージ化されていない・・・`ボタンをクリックして、先解凍された`streambulletin_chrome`というフォルダーを選択してください。
 
