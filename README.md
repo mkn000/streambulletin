@@ -9,5 +9,12 @@ This extension monitors and displays currently live streams from followed source
 * TwitCasting
 * Openrec
 * Youtube
+* FC2 Live
 ## Install / インストール
-**Firefox:** [Click](https://github.com/mkn000/streambulletin/releases/download/v0.2.1/stream_bulletin-0.2.1-fx.xpi)
+**Firefox:** [Click to install](https://github.com/mkn000/streambulletin/releases/download/v0.2.1/stream_bulletin-0.2.1-fx.xpi)
+
+**Chrome:** [streambulletin_chrome.zip]
+Download the `streambulletin_chrome.zip` and extract it to convenient location. In `chrome://extensions` enable `Developer mode` from the top right. Click `Load unpacked` and select the previously extracted `streambulletin_chrome` folder.
+
+上の`streambulletin_chrome.zip`をダウンロード、便利なところに解凍して。　Chromeで`chrome://extensions`を開け、右上で`デベロッパーモード`を有効にして。　`パッケージ化されていない・・・`ボタンをくりっくして、先解凍された`streambulletin_chrome`というフォルダーを選択してください。
+
