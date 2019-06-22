@@ -11,9 +11,9 @@ This extension monitors and displays currently live streams from followed source
 * Youtube
 * FC2 Live
 ## Install / インストール
-**Firefox:** [Click to install](https://github.com/mkn000/streambulletin/releases/download/v0.2.1/stream_bulletin-0.2.1-fx.xpi)
+**Firefox:** [Click to install](https://github.com/mkn000/streambulletin/releases/download/v0.2.3/stream_bulletin-0.2.3-fx.xpi)
 
-**Chrome:** [streambulletin_chrome.zip](https://github.com/mkn000/streambulletin/releases/download/v0.2.2/streambulletin_chrome.zip)
+**Chrome:** [streambulletin_chrome.zip](https://github.com/mkn000/streambulletin/releases/download/v0.2.3/streambulletin_chrome.zip)
 
 Download the `streambulletin_chrome.zip` and extract it to convenient location. In `chrome://extensions` enable `Developer mode` from the top right. Click `Load unpacked` and select the previously extracted `streambulletin_chrome` folder.
 
