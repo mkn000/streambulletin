@@ -46,9 +46,9 @@ class Serv{
       this.status = setTimeout(()=>{this.routine()},upInterval);
     }
   }
-  
+
   online(){
-    this.status = undefined;
+    this.status = "online";
     setTimeout(() => this.loginCheck(),10000)
   }
   
@@ -59,6 +59,12 @@ class Serv{
     this.status = "offline";
   }
 
+  statusMonitor(){
+    if (navigator.onLine && this.status == "offline"){
+      this.online();
+    }
+  }
+  
   checkDuplicates(){
     if (this.lives.length > 1){
       let i = 0;
@@ -85,9 +91,9 @@ class Serv{
     let timeDiff = moment.now()-(cookie.expirationDate*1000);
     if (timeDiff > 0) {
       return true;
-    } else if (timeDiff < 24*3600000) {
-      setTimeout(() => this.offline(),timeDiff+1);
-    }
+    } else if (timeDiff > -24*3600000) {
+      setTimeout(() => {this.login=false;this.offline()},timeDiff+1);
+    } 
     return false;
   }
   
@@ -269,15 +275,14 @@ class Openrec extends Serv{
   async routine(){
     let last_page = false;
     let live = [];
-    for (let page=1; !last_page;++page){
-      let odata =
-          await fetch(this.apiUrl+
-                      `?${this.login}&page_number=${page}&term=1`,
+    for (let p=1; !last_page;++p){
+      try{
+	let odata =
+            await fetch(this.apiUrl+`?${this.login}&page_number=${p}&term=1`,
                       {headers:{'Cookie':this.cookie}})
-          .then(resp => resp.json())
-          .catch(err => this.errReport(err))
-      try {
-        if (odata){
+            .then(resp => resp.json())
+            .catch(err => this.errReport(err))
+        if (odata.data.items){
           for (let item of odata.data.items){
             if(item.movie_live.onair_status == 1){
               live.push(item);
@@ -589,12 +594,14 @@ class FC2 extends Serv{
   }
   
   fc2CheckInv(data){
-    let isIn = false;;
-    for (let i=0;i < this.lives.length;i++){
+    let isIn = false;
+    let i=0;
+    while(i < this.lives.length){
       if (this.lives[i].id == data.channel_data.channelid){
         isIn = true;
         break;
       }
+      i++;
     }
     if (data.channel_data.is_publish && !isIn){
       this.fc2Add(data);
@@ -620,7 +627,7 @@ class FC2 extends Serv{
         let stream = new Broadcast(live.profile_data.name,
                                    live.channel_data.channelid,
                                    live.channel_data.title,
-                                   moment.unix(live.channel_data.start),
+                                   moment(live.channel_data.start),
                                    URL.createObjectURL(blob),
                                    "fc2");
         this.lives.push(stream)
