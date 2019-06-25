@@ -31,6 +31,7 @@ class Serv{
     this.lives = [];
     this.login;
     this.status;
+    this.cookieExpires;
   }
   
   add(broadcast){
@@ -49,21 +50,17 @@ class Serv{
 
   online(){
     this.status = "online";
-    setTimeout(() => this.loginCheck(),10000)
+    setTimeout(() => this.loginCheck(),2000)
   }
   
   offline(){
+    this.lives = [];
     if (typeof this.status == "number") {
       clearTimeout(this.status);
     }
     this.status = "offline";
   }
 
-  statusMonitor(){
-    if (navigator.onLine && this.status == "offline"){
-      this.online();
-    }
-  }
   
   checkDuplicates(){
     if (this.lives.length > 1){
@@ -88,10 +85,10 @@ class Serv{
   }
 
   checkExpired(cookie){
-    let timeDiff = moment.now()-(cookie.expirationDate*1000);
-    if (timeDiff > 0) {
+    let timeDiff = (cookie.expirationDate*1000)-moment.now();
+    if (timeDiff < 0) {
       return true;
-    } else if (timeDiff > -24*3600000) {
+    } else if (timeDiff < 24*3600000) {
       setTimeout(() => {this.login=false;this.offline()},timeDiff+1);
     } 
     return false;
@@ -109,14 +106,18 @@ class Niconama extends Serv{
   }
   
   loginCheck(){
-    let cn = browser.cookies.get({name: "user_session",
-                                  url: "https://www.nicovideo.jp"});
-    cn.then(cookie => {
-      if (cookie && !this.checkExpired(cookie)){
-        this.login = true;
-        this.routine();
-      }
-    })
+    if (navigator.onLine){
+      let cn = browser.cookies.get({name: "user_session",
+                                    url: "https://www.nicovideo.jp"});
+      cn.then(cookie => {
+	if (cookie && !this.checkExpired(cookie)){
+          this.login = true;
+          this.routine();
+	}
+      })
+    } else {
+      this.statis = "offline";
+    }
   }
 
   routine(){
@@ -124,7 +125,7 @@ class Niconama extends Serv{
       .then(resp => resp.json())
       .then(data => this.nicoCheck(data.bookmarkStreams))
       .then(() => this.enterLoop())
-      .catch(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
 
   nicoCheck(data){
@@ -158,7 +159,6 @@ class Niconama extends Serv{
                               )
                 )
       })
-      .catch(err => this.errReport(err))
   }
 }
 
@@ -172,15 +172,21 @@ class Whowatch extends Serv{
   }
 
   loginCheck(){
-    fetch("https://api.whowatch.tv/users/me/profile")
-      .then(resp => resp.json())
-      .then(data => {
-        if (data.name){
-          this.login = true;
-          this.routine();
-        }
-      })
-      .catch(err => this.errReport(err))
+    if (navigator.onLine){
+      fetch("https://api.whowatch.tv/users/me/profile")
+	.then(resp => resp.json())
+	.then(async data => {
+          if (data.name){
+            this.login = true;
+	    let cw = await browser.cookies.get({name:"WHOWATCH",
+					  url: "https://whowatch.tv"})
+	    this.checkExpired(cw);
+            this.routine();
+          }
+	})
+    } else {
+      this.status = "offline";
+    }
   }
 
   routine(){
@@ -188,7 +194,7 @@ class Whowatch extends Serv{
       .then(resp => resp.json())
       .then(data => this.whowCheck(data[0].popular))
       .then(() => this.enterLoop())
-      .catch(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
 
   whowCheck(data){
@@ -230,7 +236,6 @@ class Whowatch extends Serv{
                               )
                 )
       })
-      .catch(err => this.errReport(err))
   }
   
   
@@ -245,30 +250,35 @@ class Openrec extends Serv{
   }
 
   async loginCheck(){
-    let params = new URLSearchParams();
-    for (let item of ["Uuid","Token","Random"]){
-      let co = await browser.cookies.get({name:item.toLowerCase(),
-                                          url:"https://www.openrec.tv"});
-      if (co){
-        params.set(item,co.value);
+    if (navigator.onLine){
+      let params = new URLSearchParams();
+      for (let item of ["Uuid","Token","Random"]){
+	let co = await browser.cookies.get({name:item.toLowerCase(),
+                                            url:"https://www.openrec.tv"});
+	if (co){
+	  this.checkExpired(co);
+          params.set(item,co.value);
+	} else {
+          params = false;
+          break;
+	}
+      }
+      if(params){
+	this.login = params.toString();
+	let cookie = [];
+	for (let item of ["lang","device","init_dt"]){
+          let co =
+              await browser.cookies.get({name:item,
+					 url: "https://www.openrec.tv"});
+          cookie.push(`${item}=${co.value}`);
+	}
+	this.cookie = cookie.join('; ');
+	this.routine();
       } else {
-        params = false;
-        break;
+	this.login = false;
       }
-    }
-    if(params){
-      this.login = params.toString();
-      let cookie = [];
-      for (let item of ["lang","device","init_dt"]){
-        let co =
-            await browser.cookies.get({name:item,
-                                       url: "https://www.openrec.tv"});
-        cookie.push(`${item}=${co.value}`);
-      }
-      this.cookie = cookie.join('; ');
-      this.routine();
     } else {
-      this.login = false;
+      this.status = "offline";
     }
   }
 
@@ -281,7 +291,7 @@ class Openrec extends Serv{
             await fetch(this.apiUrl+`?${this.login}&page_number=${p}&term=1`,
                       {headers:{'Cookie':this.cookie}})
             .then(resp => resp.json())
-            .catch(err => this.errReport(err))
+            .catch(err => {console.log(err);this.loginCheck()})
         if (odata.data.items){
           for (let item of odata.data.items){
             if(item.movie_live.onair_status == 1){
@@ -292,7 +302,7 @@ class Openrec extends Serv{
         last_page = odata.data.is_last_page;
         setTimeout(() => {},100);
       }
-      catch(err) {this.errReport(err)}
+      catch(err) {console.log(err);this.loginCheck()}
     }
     this.openRecCheck(live);
     this.enterLoop();
@@ -328,7 +338,7 @@ class Openrec extends Serv{
                               )
                 )
       })
-      .then(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
 }
 
@@ -340,26 +350,33 @@ class Twitcasting extends Serv{
   }
 
   async loginCheck(){
-    let cookie = [];
-    let broken;
-    for (let item of ['hl','did','tc_id','tc_ss']){
-      let tc = await browser.cookies.get({name:item,
-                                          url:"https://twitcasting.tv"})
-      if(tc){
-        cookie.push(`${item}=${tc.value}`);
-      } else {
-        broken = true;
-        break;
+    if (navigator.onLine) {
+      let cookie = [];
+      let broken;
+      for (let item of ['tc_id','tc_ss']){
+	let tc = await browser.cookies.get({name:item,
+                                            url:"https://twitcasting.tv"})
+	if(tc && !this.checkExpired(tc)){
+          cookie.push(`${item}=${tc.value}`);
+	} else {
+          broken = true;
+          break;
+	}
       }
-    }
-    if (!broken) {
-      this.login = cookie.join('; ');
-      this.routine();
+      if (!broken) {
+	this.headers = {'Cookie': cookie.join('; ')};
+	this.login = true;
+	this.routine();
+      } else {
+	this.login = false;
+      }
+    } else {
+      this.status = "offline";
     }
   }
 
   routine(){
-    fetch(this.baseUrl,{headers:{'Cookie':this.login}})
+    fetch(this.baseUrl,{headers:this.headers})
       .then(resp => resp.text())
       .then(html => {
         let parser = new DOMParser();
@@ -372,7 +389,7 @@ class Twitcasting extends Serv{
         this.twitcastCheck(Array.from(online));
       })
       .then(() => this.enterLoop())
-      .catch(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
 
   twitcastCheck(data){
@@ -421,7 +438,6 @@ class Twitcasting extends Serv{
                               )
                 )
       })
-      .catch(err => this.errReport(err))
   }
   
 }
@@ -430,6 +446,7 @@ class Youtube extends Serv{
   constructor(){
     super();
     this.fetched = [];
+    this.headers;
     this.baseUrl = "https://www.youtube.com/watch?v=";
     this.apiUrl = "https://www.youtube.com/feed/subscriptions?flow=2&pbj=1";
     this.apiUrl2 = "https://www.youtube.com/guide_ajax?action_load_guide=1";
@@ -437,29 +454,34 @@ class Youtube extends Serv{
   }
 
   async loginCheck(){
-    let cy = await browser.cookies.get({name: "LOGIN_INFO",
-                                        url: "https://www.youtube.com/"});
-    let cy2 = await browser.storage.local.get('ytauth');
-    if (cy && cy2.hasOwnProperty('ytauth')){
-      this.login = cy2.ytauth;
-      initTime = moment();
-      setTimeout(() => this.routine(),200);
+    if (navigator.onLine) {
+      let cy = await browser.cookies.get({name: "LOGIN_INFO",
+                                          url: "https://www.youtube.com/"});
+      let cy2 = await browser.storage.local.get('ytauth');
+      if (cy && !this.checkExpired(cy) && cy2.hasOwnProperty('ytauth')){
+	this.headers = cy2.ytauth;
+	this.login = true;
+	initTime = moment();
+	setTimeout(() => this.routine(),200);
+      } else {
+	this.login = false;
+      }
     } else {
-      this.login = false;
+      this.status = "offline";
     }
   }
 
   routine(){
-    fetch(this.apiUrl,{headers: this.login})
+    fetch(this.apiUrl,{headers: this.headers})
       .then(resp => resp.json())
       .then(data => this.youtubeCheck(data))
       .then(() => this.routine2())
       .then(() => this.enterLoop())
-      .catch(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
 
   routine2(){
-    fetch(this.apiUrl2,{headers:this.login})
+    fetch(this.apiUrl2,{headers: this.headers})
       .then(resp => resp.json())
       .then(data => this.youtubeCheck2(data))
       .then(() => this.youtubeEnded())
@@ -470,14 +492,15 @@ class Youtube extends Serv{
     let feed = data[1].response.contents.twoColumnBrowseResultsRenderer.
         tabs[0].tabRenderer.content.sectionListRenderer.contents;
     feed.forEach(item => {
-      let yTop = item.itemSectionRenderer.contents[0].shelfRenderer;
-      if (yTop.title.simpleText == 'Live'){
-        let y = yTop.content.expandedShelfContentsRenderer.items[0]
-            .videoRenderer;
-        this.fetched.push(y.videoId);
+      let yTop = item.itemSectionRenderer.contents[0].shelfRenderer.content.
+	  expandedShelfContentsRenderer.items[0].videoRenderer;
+      if (yTop.badges &&
+	  yTop.badges[0].metadataBadgeRenderer.style ==
+	  'BADGE_STYLE_TYPE_LIVE_NOW'){
+        this.fetched.push(yTop.videoId);
         let isIn = this.lives.some(rec => {
-          return rec.id == y.videoId});
-        if (!isIn){this.youtubeAdd(y)}
+          return rec.id == yTop.videoId});
+        if (!isIn){this.youtubeAdd(yTop)}
       }
     })
 
@@ -504,7 +527,7 @@ class Youtube extends Serv{
       if (!isIn){
         fetch("https://www.youtube.com/channel/"
               +item.navigationEndpoint.browseEndpoint.browseId+"?pbj=1",
-	      {headers:this.login})
+	      {headers:this.headers})
           .then(resp => resp.json())
           .then(data => {
             let path = data[1].response.contents.
@@ -516,7 +539,6 @@ class Youtube extends Serv{
             this.fetched.push(path.videoId);
             this.youtubeAdd(path);
           })
-          .catch(err => this.errReport(err))
       }
     })
   }
@@ -540,7 +562,6 @@ class Youtube extends Serv{
                        navigationEndpoint.browseEndpoint.browseId})
         this.add(stream);
       })
-      .catch(err => this.errReport(err))
   }
 
   youtubeEnded(){
@@ -566,13 +587,17 @@ class FC2 extends Serv{
 
 
   async loginCheck(){
-    let co = await browser.cookies.get({name:"fcu",
-                                        url:"https://live.fc2.com"});
-    if (co && !this.checkExpired(co)){
-      this.login = true;
-      this.routine();
+    if (navigator.onLine) {
+      let co = await browser.cookies.get({name:"fcu",
+                                          url:"https://live.fc2.com"});
+      if (co && !this.checkExpired(co)){
+	this.login = true;
+	this.routine();
+      } else {
+	this.login = false;
+      }
     } else {
-      this.login = false;
+      this.status = "offline";
     }
   }
 
@@ -590,9 +615,9 @@ class FC2 extends Serv{
         this.fc2CheckFav(favs);
       })
       .then(() => this.enterLoop())
-      .catch(err => this.errReport(err))
+      .catch(err => {console.log(err);this.loginCheck()})
   }
-  
+    
   fc2CheckInv(data){
     let isIn = false;
     let i=0;
@@ -608,8 +633,6 @@ class FC2 extends Serv{
     } else if (!data.channel_data.is_publish && isIn) {
       this.remove(i);
     }
-
-    
   }
 
   fc2CheckFav(favs){
@@ -657,7 +680,7 @@ class badgeUpdater{
   offline(){
     clearInterval(this.status);
     this.status = "offline";
-    browser.browserAction.setBadgeText({text: ""});
+    browser.browserAction.setBadgeText({text: "off"});
     browser.browserAction.setBadgeBackgroundColor({color: "red"});
   }
 }
@@ -703,7 +726,7 @@ function versionDiff(old,newe){
 window.addEventListener("online",() => {
   try {
     initTime = moment();
-    this.badgeStatus.update();
+    window.badgeStatus.update();
     let stillDown = true;
     let setOnline = setInterval(() => {
       for (let item of keys){
@@ -722,7 +745,7 @@ window.addEventListener("online",() => {
 })
 
 window.addEventListener("offline",() => {
-  this.badgeStatus.offline();
+  window.badgeStatus.offline();
   for (let item of keys){
     window[item].offline();
   }
