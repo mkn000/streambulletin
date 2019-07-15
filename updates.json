@@ -17,7 +17,9 @@
 	{"version": "0.2.4",
 	 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.2.4/stream_bulletin-0.2.4-fx.xpi"},
 	{"version": "0.2.5",
-	 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.2.5/stream_bulletin-0.2.5-fx.xpi"}
+	 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.2.5/stream_bulletin-0.2.5-fx.xpi"},
+	{"version": "0.2.6",
+	 "update_link": "https://github.com/mkn000/streambulletin/releases/download/v0.2.6/stream_bulletin-0.2.6-fx.xpi"}
       ]
     }
   }
