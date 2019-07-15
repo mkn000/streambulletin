@@ -1,4 +1,4 @@
-var upInterval = 15*1000; //15 seconds
+var upInterval = 20*1000; //20 seconds
 var manifest = browser.runtime.getManifest();
 var isUpdate;
 var initTime;
@@ -34,11 +34,14 @@ class Serv{
     this.cookieExpires;
   }
   
-  add(broadcast){
-    this.lives.push(broadcast);
+  add(live){
+    this.lives.push(live);
+    console.log(`StreamBulletin | ${live.channel}: ${live.title} is `+
+		`live on ${this.constructor.name}.`);
   }
   
   remove(ix) {
+    console.log(`StreamBulletin | ${this.lives[ix].channel} ended stream.`);
     this.lives.splice(ix,1);
   }
   
@@ -78,9 +81,7 @@ class Serv{
   }
 
   
-  errReport(err){
-    console.log(`${moment().local().format("Do MMM HH:mm")} | `+
-                `${this.constructor.name} | ${err}\n--> Restarting`);
+  restart(){
     (navigator.onLine) ? this.loginCheck() : this.offline()
   }
 
@@ -125,7 +126,7 @@ class Niconama extends Serv{
       .then(resp => resp.json())
       .then(data => this.nicoCheck(data.bookmarkStreams))
       .then(() => this.enterLoop())
-      .catch(err => {console.log(err);this.loginCheck()})
+      .catch(err => {console.log(err);this.restart()})
   }
 
   nicoCheck(data){
@@ -134,9 +135,10 @@ class Niconama extends Serv{
       if (!isIn) {this.remove(ix)}
     })
 
-    data.forEach(live => {
+    data.some(live => {
       let isIn = this.lives.some(rec => {return live.id == rec.id})
       if (!isIn) {this.nicoAdd(live)}
+      return isIn;
     })
 
     this.checkDuplicates();
@@ -194,23 +196,23 @@ class Whowatch extends Serv{
       .then(resp => resp.json())
       .then(data => this.whowCheck(data[0].popular))
       .then(() => this.enterLoop())
-      .catch(err => {console.log(err);this.loginCheck()})
+      .catch(err => {console.log(err);this.restart()})
   }
 
   whowCheck(data){
-    let i;
-    for (i=0;i < data.length; i++){
-      if (data[i].is_follow){
-        let isIn = this.lives.some(rec => {
-          return data[i].id == rec.id;
-        })
-        if (!isIn) {this.whowAdd(data[i])}
-      } else if (data[i].user.is_admin){
-        continue;
+    data.some(live => {
+      if (live.is_follow){
+        let isIn = this.lives.some(rec => {return live.id == rec.id});
+        if (!isIn) {
+	  this.whowAdd(live);
+	  return false;
+	}
+      } else if (live.user.is_admin){
+	return false;
       } else {
-        break;
+	return true;
       }
-    }
+    });
 
     let online = data.slice(0,i);
     this.lives.forEach((rec,ix) => {
@@ -218,7 +220,7 @@ class Whowatch extends Serv{
         return live.id == rec.id;
       })
       if (!isIn) {this.remove(ix)}
-    })
+    });
 
     this.checkDuplicates();
   }
@@ -291,7 +293,6 @@ class Openrec extends Serv{
             await fetch(this.apiUrl+`?${this.login}&page_number=${p}&term=1`,
                       {headers:{'Cookie':this.cookie}})
             .then(resp => resp.json())
-            .catch(err => {console.log(err);this.loginCheck()})
         if (odata.data.items){
           for (let item of odata.data.items){
             if(item.movie_live.onair_status == 1){
@@ -302,7 +303,7 @@ class Openrec extends Serv{
         last_page = odata.data.is_last_page;
         setTimeout(() => {},100);
       }
-      catch(err) {console.log(err);this.loginCheck()}
+      catch(err) {console.log(err);this.restart()}
     }
     this.openRecCheck(live);
     this.enterLoop();
@@ -338,7 +339,6 @@ class Openrec extends Serv{
                               )
                 )
       })
-      .catch(err => {console.log(err);this.loginCheck()})
   }
 }
 
@@ -389,7 +389,7 @@ class Twitcasting extends Serv{
         this.twitcastCheck(Array.from(online));
       })
       .then(() => this.enterLoop())
-      .catch(err => {console.log(err);this.loginCheck()})
+      .catch(err => {console.log(err);this.restart()})
   }
 
   twitcastCheck(data){
@@ -472,106 +472,103 @@ class Youtube extends Serv{
   }
 
   routine(){
-    fetch(this.apiUrl,{headers: this.headers})
+    let ytFetch1 = fetch(this.apiUrl,{headers: this.headers})
       .then(resp => resp.json())
-      .then(data => this.youtubeCheck(data))
-      .then(() => this.routine2())
-      .then(() => this.enterLoop())
-      .catch(err => {console.log(err);this.loginCheck()})
-  }
+      .then(data => this.youtubeRetrieve(data))
 
-  routine2(){
-    fetch(this.apiUrl2,{headers: this.headers})
+    let ytFetch2 = fetch(this.apiUrl2,{headers: this.headers})
       .then(resp => resp.json())
-      .then(data => this.youtubeCheck2(data))
-      .then(() => this.youtubeEnded())
+      .then(data => this.youtubeRetrieve2(data))
+
+    Promise.all([ytFetch1,ytFetch2])
+      .then(data => this.youtubeCheck(data[0].concat(data[1])))
+      .then(() => this.enterLoop())
+      .catch(err => {console.log(err);this.restart()})
   }
   
-  youtubeCheck(data){
+  youtubeRetrieve(data){
+    let fetched = [];
     let i = 0;
     let feed = data[1].response.contents.twoColumnBrowseResultsRenderer.
         tabs[0].tabRenderer.content.sectionListRenderer.contents;
-    feed.forEach(item => {
+    feed.some(item => {
       let yTop = item.itemSectionRenderer.contents[0].shelfRenderer.content.
 	  expandedShelfContentsRenderer.items[0].videoRenderer;
       if (yTop.badges &&
 	  yTop.badges[0].metadataBadgeRenderer.style ==
 	  'BADGE_STYLE_TYPE_LIVE_NOW'){
-        this.fetched.push(yTop.videoId);
-        let isIn = this.lives.some(rec => {
-          return rec.id == yTop.videoId});
-        if (!isIn){this.youtubeAdd(yTop)}
-      }
-    })
-
-  }
-
-  youtubeCheck2(data){
-    let temp = [];
-    let feed = data.response.items[1].guideSubscriptionsSectionRenderer;
-    for (let i=0;i<feed.items.length-2;i++){
-      let item = feed.items[i].guideEntryRenderer;
-      if (item.badges.liveBroadcasting){
-        temp.push(item);
+        fetched.push(yTop.ownerText.runs[0].navigationEndpoint.browseEndpoint.
+		     browseId);
+	return false;
       } else {
-        break;
-      }
-      
-    }
-
-    temp.forEach(item => {
-      let isIn = this.lives.some(rec => {
-        return rec.channelID == item.navigationEndpoint.browseEndpoint.
-	  browseId;
-      })
-      if (!isIn){
-        fetch("https://www.youtube.com/channel/"
-              +item.navigationEndpoint.browseEndpoint.browseId+"?pbj=1",
-	      {headers:this.headers})
-          .then(resp => resp.json())
-          .then(data => {
-            let path = data[1].response.contents.
-		twoColumnBrowseResultsRenderer.
-                tabs[0].tabRenderer.content.sectionListRenderer.
-                contents[0].itemSectionRenderer.contents[0].
-                channelFeaturedContentRenderer.items[0].
-                videoRenderer;
-            this.fetched.push(path.videoId);
-            this.youtubeAdd(path);
-          })
+	return true;
       }
     })
-  }
-  
-  youtubeAdd(live){
-    fetch(live.channelThumbnailSupportedRenderers.
-          channelThumbnailWithLinkRenderer.thumbnail.thumbnails[0].url)
-      .then(resp => resp.blob())
-      .then(blob => {
-        let stream = new Broadcast(live.ownerText.runs[0].text,
-                                   live.videoId,
-                                   live.title.simpleText,
-                                   moment(),
-                                   URL.createObjectURL(blob),
-                                   "yt"
-                                  )
-        if (moment().diff(initTime) < 20000){
-          stream.append({startUnclear: true})
-        }
-        stream.append({channelID:live.ownerText.runs[0].
-                       navigationEndpoint.browseEndpoint.browseId})
-        this.add(stream);
-      })
+    return fetched;
   }
 
-  youtubeEnded(){
+  youtubeRetrieve2(data){
+    let fetched = [];
+    let feed = data.response.items[1].guideSubscriptionsSectionRenderer.items;
+    feed.some(entry => {
+      if (entry.guideEntryRenderer.badges.liveBroadcasting){
+        fetched.push(entry.guideEntryRenderer.navigationEndpoint.
+		     browseEndpoint.browseId);
+	return false;
+      } else {
+        return true;
+      }
+    })
+    return fetched;
+  }
+
+  youtubeCheck(live){
+    let data = [...new Set(live)];
     this.lives.forEach((rec,ix) => {
-      let isIn = this.fetched.some(live => {return rec.id == live})
-      if (!isIn) {this.remove(ix)}
+      let isIn = data.some(channel => {return rec.channelid == channel});
+      if (!isIn) {this.remove(ix)};
+    })
+    
+    data.forEach(channel => {
+      let isIn = this.lives.some(rec => {return rec.channelid == channel});
+      if (!isIn){this.youtubeAdd(channel)};
+      return isIn;
     })
     
     this.checkDuplicates();
-    this.fetched = [];    
+  }
+  
+  async youtubeAdd(live){
+    let info = await
+      fetch(`https://www.youtube.com/channel/${live}?pbj=1`,
+	    {headers:this.headers}).then(resp => resp.json());
+    try {
+      let t = info[1].response.contents.twoColumnBrowseResultsRenderer.tabs[0].
+	  tabRenderer.content.sectionListRenderer.contents[0].
+	  itemSectionRenderer.contents[0].channelFeaturedContentRenderer.
+	  items[0].videoRenderer;
+      if (t.badges[0].metadataBadgeRenderer.style ==
+	  'BADGE_STYLE_TYPE_LIVE_NOW'){
+	fetch(info[1].response.metadata.channelMetadataRenderer.avatar.
+	      thumbnails[0].url)
+	  .then(resp => resp.blob())
+	  .then(blob => {
+            let stream = new Broadcast(t.ownerText.runs[0].text,
+                                       t.videoId,
+                                       t.title.simpleText,
+                                       moment(),
+                                       URL.createObjectURL(blob),
+                                       "yt"
+                                      );
+            if (moment().diff(initTime) < 20000){
+              stream.append({startUnclear: true});
+            }
+            stream.append({channelid:live});
+            this.add(stream);
+	  })
+      }
+    }
+    catch(err) {console.log('StreamBulletin | False live alert from Youtube.')}
   }
   
 }
@@ -615,7 +612,7 @@ class FC2 extends Serv{
         this.fc2CheckFav(favs);
       })
       .then(() => this.enterLoop())
-      .catch(err => {console.log(err);this.loginCheck()})
+      .catch(err => {console.log(err);this.restart()})
   }
     
   fc2CheckInv(data){
@@ -653,7 +650,7 @@ class FC2 extends Serv{
                                    moment(live.channel_data.start),
                                    URL.createObjectURL(blob),
                                    "fc2");
-        this.lives.push(stream)
+        this.add(stream)
       })
   }
 
@@ -697,8 +694,7 @@ class badgeUpdater{
   badgeStatus = new badgeUpdater();
 })();
 
-
-
+//version check for chrome
 function versionCheck(){
   fetch(updateURL)
     .then(resp => resp.json())
@@ -711,7 +707,6 @@ function versionCheck(){
 
 }
 
-
 function versionDiff(old,newe){
   let cur = old.split('.');
   let lat = newe.split('.');
@@ -722,7 +717,7 @@ function versionDiff(old,newe){
   return false;
 }
 
-
+//network connection status
 window.addEventListener("online",() => {
   try {
     initTime = moment();
