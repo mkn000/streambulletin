@@ -200,21 +200,23 @@ class Whowatch extends Serv{
   }
 
   whowCheck(data){
-    data.some(live => {
+    let nlive = 0;
+    data.some((live,i) => {
       if (live.is_follow){
         let isIn = this.lives.some(rec => {return live.id == rec.id});
         if (!isIn) {
 	  this.whowAdd(live);
-	  return false;
 	}
+	return false;
       } else if (live.user.is_admin){
 	return false;
       } else {
+	nlive = i;
 	return true;
       }
     });
 
-    let online = data.slice(0,i);
+    let online = data.slice(0,nlive);
     this.lives.forEach((rec,ix) => {
       let isIn = online.some(live => {
         return live.id == rec.id;
@@ -239,7 +241,6 @@ class Whowatch extends Serv{
                 )
       })
   }
-  
   
 }
 
@@ -491,7 +492,7 @@ class Youtube extends Serv{
     let i = 0;
     let feed = data[1].response.contents.twoColumnBrowseResultsRenderer.
         tabs[0].tabRenderer.content.sectionListRenderer.contents;
-    feed.some(item => {
+    feed.forEach(item => {
       let yTop = item.itemSectionRenderer.contents[0].shelfRenderer.content.
 	  expandedShelfContentsRenderer.items[0].videoRenderer;
       if (yTop.badges &&
@@ -499,11 +500,8 @@ class Youtube extends Serv{
 	  'BADGE_STYLE_TYPE_LIVE_NOW'){
         fetched.push(yTop.ownerText.runs[0].navigationEndpoint.browseEndpoint.
 		     browseId);
-	return false;
-      } else {
-	return true;
       }
-    })
+    });
     return fetched;
   }
 
