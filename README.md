@@ -13,7 +13,7 @@ This extension monitors and displays currently live streams from followed source
 ## Install / インストール
 **Firefox:** [Click to install](https://github.com/mkn000/streambulletin/releases/download/v0.2.7/stream_bulletin-0.2.7-fx.xpi)
 
-**Chrome:** [streambulletin_chrome.zip](https://github.com/mkn000/streambulletin/releases/download/v0.2.7/streambulletin_chrome.zip)
+**Chrome:** [streambulletin_chrome.zip](https://github.com/mkn000/streambulletin/releases/latest/download/streambulletin_chrome.zip)
 
 Download the `streambulletin_chrome.zip` and extract it to convenient location. In `chrome://extensions` enable `Developer mode` from the top right. Click `Load unpacked` and select the previously extracted `streambulletin_chrome` folder.
 
