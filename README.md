@@ -1,3 +1,5 @@
+## Deprecated due to Youtube API changes and whowatch blocking foreign IPs
+
 # Stream Bulletin
 ※日本語おかしかったら申し訳ないです。
 
